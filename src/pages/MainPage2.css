@@ -1,0 +1,216 @@
+/* General Reset */
+body,
+h1,
+h2,
+h3,
+p,
+ul,
+li,
+a,
+button {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+.menu-icon {
+  width: 5rem;
+  height: 5rem;
+}
+body {
+  font-family: "Arial", sans-serif;
+  background-color: #ffffff; /* Fondo blanco */
+  color: #333333; /* Gris oscuro */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Altura mínima de toda la pantalla */
+}
+
+/* Contenedor Principal */
+.main-page {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Para rellenar el espacio vertical restante */
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f8f8; /* Gris claro */
+  color: #333;
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.1);
+}
+
+.navbar .logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #b71c1c; /* Rojo apagado */
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.nav-links a:hover {
+  color: #b71c1c; /* Rojo apagado */
+}
+
+.auth-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.auth-links a {
+  color: #333;
+  text-decoration: none;
+}
+
+.auth-links button {
+  background-color: #ffd54f; /* Amarillo pastel */
+  color: #333;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.auth-links button:hover {
+  background-color: #f4e04d; /* Amarillo un poco más fuerte */
+}
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: linear-gradient(
+    135deg,
+    #b71c1c,
+    #ffd54f
+  ); /* Rojo apagado a amarillo pastel */
+  color: #ffffff;
+  flex-grow: 1; /* Ocupará el espacio restante */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.hero .btn-primary {
+  padding: 0.8rem 1.5rem;
+  background-color: #ffd54f;
+  color: #333;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.hero .btn-primary:hover {
+  background-color: #f4e04d;
+}
+
+/* Footer */
+.footer {
+  background-color: #f8f8f8; /* Gris claro */
+  color: #333;
+  padding: 2rem 1rem;
+  border-top: 2px solid #b71c1c; /* Línea roja apagada */
+  margin-top: auto; /* Empuja el footer al final */
+  margin-bottom: auto;
+}
+
+.footer-container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.footer-logo h3 {
+  color: #b71c1c; /* Rojo apagado */
+  font-size: 1.5rem;
+}
+
+.footer-links {
+  display: flex;
+  gap: 2rem;
+}
+
+.footer-column h4 {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: #666; /* Gris suave */
+}
+
+.footer-column ul {
+  list-style: none;
+}
+
+.footer-column ul li {
+  margin-bottom: 0.5rem;
+}
+
+.footer-column ul li a {
+  text-decoration: none;
+  color: #333;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+.footer-column ul li a:hover {
+  color: #b71c1c;
+}
+
+.social-links {
+  text-align: center;
+}
+
+.social-links .icons {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.social-links .social-icon {
+  font-size: 1.5rem;
+  color: #b71c1c; /* Rojo apagado */
+  transition: transform 0.3s ease, color 0.3s ease;
+  text-decoration: none;
+}
+
+.social-links .social-icon:hover {
+  color: #f4e04d; /* Amarillo pastel */
+  transform: scale(1.1);
+}
+
+.footer-bottom {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: #666; /* Gris suave */
+}

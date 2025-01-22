@@ -1,7 +1,11 @@
 // src/components/MainPage.jsx
-import React from "react";
+//import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faInstagram, faFacebook, faLinkedin } from "@fortawesome/free-brands-svg-icons";
+import {
+  faInstagram,
+  faFacebook,
+  faLinkedin,
+} from "@fortawesome/free-brands-svg-icons";
 import "./MainPage.css";
 
 function MainPage() {
@@ -9,14 +13,22 @@ function MainPage() {
     <div className="main-page">
       {/* Navbar */}
       <header className="navbar">
-      <img className="menu-icon" src="logo.png" alt="logotipo" />
-      <div className="logo">FlashGo</div>
+        <img className="menu-icon" src="logo.png" alt="logotipo" />
+        <div className="logo">FlashGo</div>
         <nav>
           <ul className="nav-links">
-            <li><a href="#business">Empresas</a></li>
-            <li><a href="#personal">Particulares</a></li>
-            <li><a href="#driver">Conductores</a></li>
-            <li><a href="#pricing">Precios</a></li>
+            <li>
+              <a href="#business">Empresas</a>
+            </li>
+            <li>
+              <a href="#personal">Particulares</a>
+            </li>
+            <li>
+              <a href="#driver">Conductores</a>
+            </li>
+            <li>
+              <a href="#pricing">Precios</a>
+            </li>
           </ul>
         </nav>
         <div className="auth-links">
@@ -28,7 +40,10 @@ function MainPage() {
       {/* Hero Section */}
       <section className="hero">
         <h1>Envíos Rápidos y Seguros con FlashGo</h1>
-        <p>Plataforma de envíos a demanda. Escoge tu método ideal y comienza ahora.</p>
+        <p>
+          Plataforma de envíos a demanda. Escoge tu método ideal y comienza
+          ahora.
+        </p>
         <button className="btn-primary">Reserva Ahora</button>
       </section>
 
@@ -42,24 +57,40 @@ function MainPage() {
             <div className="footer-column">
               <h4>Servicios</h4>
               <ul>
-                <li><a href="#business">Empresas</a></li>
-                <li><a href="#personal">Particulares</a></li>
-                <li><a href="#driver">Conductores</a></li>
+                <li>
+                  <a href="#business">Empresas</a>
+                </li>
+                <li>
+                  <a href="#personal">Particulares</a>
+                </li>
+                <li>
+                  <a href="#driver">Conductores</a>
+                </li>
               </ul>
             </div>
             <div className="footer-column">
               <h4>Compañía</h4>
               <ul>
-                <li><a href="#about">Sobre Nosotros</a></li>
-                <li><a href="#contact">Contacto</a></li>
-                <li><a href="#careers">Carreras</a></li>
+                <li>
+                  <a href="#about">Sobre Nosotros</a>
+                </li>
+                <li>
+                  <a href="#contact">Contacto</a>
+                </li>
+                <li>
+                  <a href="#careers">Carreras</a>
+                </li>
               </ul>
             </div>
             <div className="footer-column">
               <h4>Legal</h4>
               <ul>
-                <li><a href="#privacy">Política de Privacidad</a></li>
-                <li><a href="#terms">Términos y Condiciones</a></li>
+                <li>
+                  <a href="#privacy">Política de Privacidad</a>
+                </li>
+                <li>
+                  <a href="#terms">Términos y Condiciones</a>
+                </li>
               </ul>
             </div>
           </div>
@@ -87,6 +118,3 @@ function MainPage() {
 }
 
 export default MainPage;
-
-
-
