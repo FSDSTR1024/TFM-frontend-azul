@@ -5,7 +5,7 @@ import "./UserProfile.css";
 
 function UserProfile() {
     const [activeSection, setActiveSection] = useState("profile");
-
+    const [chatOrder, setChatOrder] = useState(null); // Estado para controlar el chat
     // Estado para los filtros
     const [filters, setFilters] = useState({
         vehicle: "",
@@ -108,11 +108,20 @@ function UserProfile() {
                                         <p>Estado: {order.status}</p>
                                         <button className="modify-button">Modificar Dirección</button>
                                         <button className="cancel-button">Cancelar</button>
+                                         {/* Botón para abrir chat solo si el pedido está activo */}
+                                    {order.status !== "Entregado" && (
+                                        <button className="chat-button" onClick={() => setChatOrder(order)}>
+                                            Chatear con DRIVER
+                                        </button>
+                                    )}
                                     </div>
                                 ))
                             ) : (
                                 <p className="no-orders">No hay órdenes que coincidan con los filtros.</p>
+                                
                             )}
+                           {/* Mostrar Chat Popup si hay una orden activa */}
+               {chatOrder && <Chat order={chatOrder} closeChat={() => setChatOrder(null)} />}
                         </div>
                     )}
 
@@ -164,6 +173,7 @@ function UserProfile() {
                 </section>
             </div>
             <Footer />
+               
         </div>
     );
 }
