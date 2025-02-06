@@ -1,1 +1,99 @@
+/* Fondo Oscuro */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
 
+/* Modal de Login */
+.login-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    width: 280px;  /* 🔹 Hacemos el modal más pequeño */
+    text-align: center;
+}
+
+/* Botón de Cierre (X) */
+.close-button {
+    position: absolute;
+    top: -17px;
+    right: 0px;
+    border: none;
+    background: none;
+    font-size: 1rem;  /* 🔹 Hacemos la "X" más pequeña */
+    cursor: pointer;
+    color: #b71c1c;
+    width: 30px;   /* 🔹 Se asegura que el botón tenga un tamaño controlado */
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.close-button:hover {
+    color: #ff3333;
+    background: rgba(255, 0, 0, 0.1);
+}
+
+/* Inputs */
+.login-modal input {
+    width: 100%;
+    padding: 0.6rem;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Labels */
+.login-modal label {
+    display: block;
+    font-weight: bold;
+    margin-top: 1rem;
+    text-align: left;
+}
+
+/* Botón de Enviar */
+.login-modal button {
+    background: #007bff;
+    color: white;
+    font-size: 1rem;
+    padding: 0.7rem;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 1rem;
+}
+
+.login-modal button:hover {
+    background: #0056b3;
+}
+
+/* Mensajes de error */
+.error {
+    color: red;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    text-align: left;
+}
+
+/* Animación */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -55%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.login-modal {
+    animation: fadeIn 0.3s ease-in-out;
+}

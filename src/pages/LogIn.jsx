@@ -1,90 +1,69 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "./LogIn.css";
-export const LogIn = () => {
+
+export const LogIn = ({ closeModal }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    console.log({ user });
-  }, [user]);
-
-  useEffect(() => {
-    console.log({ email, password });
-  }, [email, password]);
+  const validateForm = () => {
+    let newErrors = {};
+    if (!email.includes("@")) newErrors.email = "Ingrese un email válido.";
+    if (password.length < 6) newErrors.password = "La contraseña debe tener al menos 6 caracteres.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    //console.log(email, password);
+    if (!validateForm()) return; // Si hay errores, no se envía
+
     const response = await fetch("http://localhost:3000/login", {
       headers: { "Content-Type": "application/json" },
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
     const json = await response.json();
-    localStorage.setItem("token", json.token);
-    setToken(json.token);
+    alert("Inicio de sesión exitoso 🚀");
+    closeModal(); // Cerrar modal tras iniciar sesión
   };
-
-  const fetchUser = async (token) => {
-    const response = await fetch("http://localhost:3000/user", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = await response.json();
-    console.log({ json });
-    setUser(json);
-  };
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    setToken(null);
-    setUser(null);
-  };
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setToken(token);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (token) {
-      fetchUser(token);
-    }
-  }, [token]);
 
   return (
     <>
-      <h1>Flash Go</h1>
-      {!user && (
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div>
-            <label htmlFor="email">Email</label>
-            <input id="email" onBlur={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              onBlur={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <button onClick={handleSubmit}>Log In</button>
-        </div>
-      )}
-      {user && (
-        <>
-          <h2>{user.name}</h2>
-          <p>{user.age}</p>
-          <p>{user.email}</p>
-          <p>{user.rol}</p>
-          <button onClick={() => logout()}>Logout</button>
-        </>
-      )}
+      {/* Fondo Oscuro */}
+      <div className="overlay" onClick={closeModal}></div>
+
+      {/* Modal de Login */}
+      <div className="login-modal">
+        <button className="close-button" onClick={closeModal}>X</button>
+        <h2>Iniciar Sesión</h2>
+
+        <form onSubmit={handleSubmit}>
+          <label>Email</label>
+          <input
+            type="email"
+            placeholder="Introduce tu email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {errors.email && <p className="error">{errors.email}</p>}
+
+          <label>Contraseña</label>
+          <input
+            type="password"
+            placeholder="Introduce tu contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {errors.password && <p className="error">{errors.password}</p>}
+
+          <button type="submit">Entrar</button>
+        </form>
+      </div>
     </>
   );
 };
+
 export default LogIn;
+
+

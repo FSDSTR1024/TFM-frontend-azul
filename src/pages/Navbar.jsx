@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import "./Navbar.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBars, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
+import LogIn from "./LogIn"; // Importamos el Login
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false); // Estado para mostrar el popup de Login
 
   return (
     <>
-      {/* Navbar */}
+      {/* Navbar Superior */}
       <header className="navbar">
         <div className="logo">FlashGo</div>
 
@@ -26,13 +28,24 @@ const Navbar = () => {
           <li><a href="#personal">Particulares</a></li>
           <li><a href="#driver">Conductores</a></li>
           <li><a href="#pricing">Precios</a></li>
-          <li><a href="/LogIn">Iniciar Sesión</a></li>
-          <li><a href="/SignUp">Regístrate</a></li>
+          <li><Link to="/SignUp">Regístrate</Link></li>
           <li><Link to="/UserProfile">Mi Perfil</Link></li>
         </ul>
+
+        {/* Botón para abrir Login Popup */}
+        <div className="login-section">
+          <button className="login-toggle" onClick={() => setIsLoginOpen(true)}>
+            <FontAwesomeIcon icon={faUser} /> Iniciar Sesión
+          </button>
+        </div>
       </nav>
+
+      {/* Popup Login */}
+      {isLoginOpen && <LogIn closeModal={() => setIsLoginOpen(false)} />}
     </>
   );
 };
 
 export default Navbar;
+
+

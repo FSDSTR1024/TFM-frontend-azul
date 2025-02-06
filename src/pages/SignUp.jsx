@@ -1,101 +1,105 @@
 import { useForm } from "react-hook-form";
-import "./signUp.css";
-export const SignUp = () => {
-  //const SignUp = () => {
-  const { register, handleSubmit, formState, watch, setValue } = useForm();
+import { useState } from "react";
+import Navbar from "../pages/Navbar";
+import Footer from "../pages/Footer";
+import "./SignUp.css";
 
-  const onHandleSubmit = () => {
-    setValue("captcha", true);
-    console.log("onHandleSubmit");
-    fetch("http://localhost:5173", {});
+export const SignUp = () => {
+  const { register, handleSubmit, formState, watch } = useForm();
+  const [previewDNI, setPreviewDNI] = useState(null);
+  const [previewVehicle, setPreviewVehicle] = useState(null);
+
+  const userType = watch("userType");
+
+  const handleImageChange = (e, setPreview) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPreview(URL.createObjectURL(file));
+    }
   };
 
-  const showFormState = () => {
-    console.log(formState);
+  const onSubmit = (data) => {
+    console.log("Formulario enviado:", data);
+    alert("Registro exitoso 🚀");
   };
 
   return (
-    <div>
-      <h2>Flash Go</h2>
-      <h3>Hello, {watch("username")}</h3>S
-      <form onSubmit={handleSubmit(onHandleSubmit)}>
-        <p>Username</p>
-        <input
-          type="text"
-          {...register("username", {
-            required: { value: true, message: "El username es requerido" },
-            minLength: {
-              value: 4,
-              message: "El username debe tener al mas 4 caracteres",
-            },
-          })}
-        />
-        {formState.errors.username && (
-          <p className="error">{formState.errors.username.message}</p>
-        )}
-        <p>Password</p>
-        <input
-          type="password"
-          {...register("password", {
-            required: { value: true, message: "El password es requerido" },
-            minLength: {
-              value: 6,
-              message: "El password debe tener al mas 6 caracteres",
-            },
-          })}
-        />
-        {formState.errors.password && (
-          <p className="error">{formState.errors.password.message}</p>
-        )}
-        <p>Description</p>
-        <textarea
-          type="description"
-          {...register("description", {
-            required: {
-              value: true,
-              message: "El description debe tener al menos 50 caracteres",
-            },
-            minLength: {
-              value: 50,
-            },
-            maxLength: {
-              value: 250,
-              message: "El description debe tener solo 250 caracteres",
-            },
-          })}
-        />
-        {formState.errors.description && (
-          <p className="error">{formState.errors.description.message}</p>
-        )}
+    <div className="signup-container">
+      <Navbar />
+      <div className="signup-form">
+        <h2>Registro de Usuario</h2>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Datos Básicos */}
+          <label>Nombre</label>
+          <input type="text" {...register("firstName", { required: "El nombre es obligatorio" })} />
+          {formState.errors.firstName && <p className="error">{formState.errors.firstName.message}</p>}
 
-        <p>Age</p>
-        <input
-          type="number"
-          {...register("number", {
-            required: {
-              value: true,
-              message: "El edad es requerido",
-            },
-            min: {
-              value: 18,
-              message: "El minimo edad es 18",
-            },
+          <label>Apellidos</label>
+          <input type="text" {...register("lastName", { required: "Los apellidos son obligatorios" })} />
+          {formState.errors.lastName && <p className="error">{formState.errors.lastName.message}</p>}
 
-            //message: "El minimo edad es 18",
-            //required: { value: true, message: "El edad es requerido" },
-            //min: {
-            //value: 18,
-            //messege: "El minimo edad es 18 caracteres",
-          })}
-        />
-        {formState.errors.number && (
-          <p className="error">{formState.errors.number.message}</p>
-        )}
+          <label>Email</label>
+          <input type="email" {...register("email", { required: "El email es obligatorio" })} />
+          {formState.errors.email && <p className="error">{formState.errors.email.message}</p>}
 
-        <button type="submit">Entrar</button>
-      </form>
-      <button onClick={showFormState}>Show Form State</button>
-      <p>{JSON.stringify(watch())}</p>
+          <label>Número de Teléfono</label>
+          <input type="tel" {...register("phone", { required: "El teléfono es obligatorio" })} />
+          {formState.errors.phone && <p className="error">{formState.errors.phone.message}</p>}
+
+          <label>Fecha de Nacimiento</label>
+          <input type="date" {...register("birthdate", { required: "La fecha de nacimiento es obligatoria" })} />
+          {formState.errors.birthdate && <p className="error">{formState.errors.birthdate.message}</p>}
+
+          {/* Tipo de Cliente */}
+          <label>Tipo de Cliente</label>
+          <select {...register("userType", { required: "Seleccione un tipo de cliente" })}>
+            <option value="">Seleccione...</option>
+            <option value="driver">Driver</option>
+            <option value="customer">Cliente Normal</option>
+            <option value="company">Empresa</option>
+          </select>
+          {formState.errors.userType && <p className="error">{formState.errors.userType.message}</p>}
+
+          {/* Campos adicionales para Drivers */}
+          {userType === "driver" && (
+            <>
+              <label>Tipo de Vehículo</label>
+              <input type="text" {...register("vehicleType", { required: "Ingrese su tipo de vehículo" })} />
+
+              <label>Ciudad de Trabajo</label>
+              <input type="text" {...register("workCity", { required: "Ingrese la ciudad donde trabajará" })} />
+
+              <label>Subir Foto de DNI</label>
+              <input type="file" accept="image/*" {...register("dniImage", { required: "Suba una foto de su DNI" })} onChange={(e) => handleImageChange(e, setPreviewDNI)} />
+              {previewDNI && <img src={previewDNI} alt="DNI Preview" className="preview-image" />}
+
+              <label>Subir Foto del Vehículo</label>
+              <input type="file" accept="image/*" {...register("vehicleImage", { required: "Suba una foto de su vehículo" })} onChange={(e) => handleImageChange(e, setPreviewVehicle)} />
+              {previewVehicle && <img src={previewVehicle} alt="Vehículo Preview" className="preview-image" />}
+            </>
+          )}
+
+          {/* Campo adicional para Empresas */}
+          {userType === "company" && (
+            <>
+              <label>CIF</label>
+              <input type="text" {...register("cif", { required: "Ingrese su CIF" })} />
+            </>
+          )}
+
+          {/* Contraseña */}
+          <label>Contraseña</label>
+          <input type="password" {...register("password", { required: "La contraseña es obligatoria", minLength: { value: 6, message: "Debe tener al menos 6 caracteres" } })} />
+          {formState.errors.password && <p className="error">{formState.errors.password.message}</p>}
+
+          <label>Confirmar Contraseña</label>
+          <input type="password" {...register("confirmPassword", { required: "Confirme su contraseña" })} />
+          {formState.errors.confirmPassword && <p className="error">{formState.errors.confirmPassword.message}</p>}
+
+          <button type="submit">Registrarse</button>
+        </form>
+      </div>
+      <Footer />
     </div>
   );
 };
