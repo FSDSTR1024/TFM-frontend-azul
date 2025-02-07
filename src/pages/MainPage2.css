@@ -9,7 +9,6 @@
 .main-page {
   display: flex;
   flex-direction: column;
-  font-family: 'Arial', sans-serif;
   color: #333;
   min-height: 100vh;
 }
@@ -23,7 +22,6 @@
   color: white;
   padding: 1rem 2rem;
   box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.1);
-  position: relative;
 }
 
 .navbar .logo {
@@ -31,56 +29,128 @@
   font-weight: bold;
 }
 
-/* Botón de menú */
-.menu-toggle {
-  background: none;
-  border: none;
-  font-size: 1.8rem;
-  cursor: pointer;
-  color: white;
+/* 📹 Video Section */
+.video-section {
+  z-index: -1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: black;
 }
 
-/* Menú lateral */
-.side-menu {
-  position: fixed;
-  top: 0;
-  left: -250px;
-  width: 250px;
-  height: 100vh;
-  background-color: #B71C1C;
-  color: white;
-  padding-top: 2rem;
-  transition: left 0.3s ease-in-out;
-  box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.2);
+.video-section video {
+  width: 100%;
+  max-height: 500px;
+  object-fit: cover;
 }
 
-.side-menu.open {
-  left: 0;
+/* 🏆 Why Choose Us */
+.why-choose-us {
+  background-color: #f4f4f4;
+  padding: 50px 20px;
+  text-align: center;
 }
 
-.side-menu ul {
-  list-style: none;
-  padding: 0;
+.why-choose-us h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #B71C1C;
 }
 
-.side-menu ul li {
-  padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+.benefits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
 }
-
 .side-menu ul li a {
-  color: white;
-  text-decoration: none;
+  color: white;  /* Cambia el color del texto a blanco */
+  text-decoration: none;  /* Quita el subrayado */
   font-size: 1.2rem;
   display: block;
   transition: background 0.3s;
 }
 
+/* Cuando el usuario pasa el mouse */
 .side-menu ul li a:hover {
   background: rgba(255, 255, 255, 0.2);
+  text-decoration: none;  /* Asegura que no aparezca el subrayado al pasar el mouse */
+}
+.benefit {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  width: 250px;
+  text-align: center;
+  transition: transform 0.3s;
 }
 
-/* Hero Section */
+.benefit:hover {
+  transform: scale(1.05);
+}
+
+.benefit .icon {
+  font-size: 3rem;
+  color: #B71C1C;
+  margin-bottom: 10px;
+}
+
+.btn-try-now {
+  margin-top: 20px;
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  background-color: #B71C1C;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.3s;
+}
+
+.btn-try-now:hover {
+  background-color: #8E1414;
+}
+
+/* 🚚 Vehicle Section */
+.vehicle-section {
+  padding: 50px 20px;
+  background-color: white;
+  text-align: center;
+}
+
+.vehicle-section h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #B71C1C;
+}
+
+.vehicle-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.vehicle-box {
+  width: 180px;
+  text-align: center;
+}
+
+.vehicle-box img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.vehicle-box p {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* 🎨 Hero Section */
 .hero {
   text-align: center;
   padding: 3rem 1rem;
@@ -116,15 +186,20 @@
   background-color: #F4E04D;
 }
 
-/* Footer */
-.footer {
-  background-color: #F8F8F8;
-  color: #333;
-  padding: 2rem 1rem;
-  border-top: 2px solid #B71C1C;
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* 📱 Responsive */
+@media (max-width: 768px) {
+  .benefits {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .vehicle-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .vehicle-box {
+    width: 80%;
+  }
 }
 

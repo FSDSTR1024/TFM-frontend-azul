@@ -1,0 +1,158 @@
+.galeria, .vehiculos, .calculadora, .cotizacion {
+    padding: 50px;
+    text-align: center;
+  }
+  
+  .categorias {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .categoria {
+    background: #f4f4f4;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    width: 20%;
+  }
+  
+  .categoria img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 5px;
+  }
+  
+  .vehiculos-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  
+  .vehiculo {
+    background: #f4f4f4;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    width: 20%;
+  }
+  
+  .calculadora-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .calculadora-form input, .cotizacion input, .cotizacion textarea, .cotizacion select {
+    padding: 10px;
+    width: 250px;
+    margin-bottom: 10px;
+  }
+  
+  .calculadora-form button, .cotizacion button {
+    padding: 10px;
+    background: #B71C1C;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .resultado {
+    margin-top: 10px;
+    font-size: 1.2rem;
+  }
+  
+  .faq details {
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 5px 0;
+  }
+  
+  .faq summary {
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .cotizacion-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh; /* Ajusta altura para centrado vertical */
+    background: #f8f8f8; /* Fondo gris claro */
+  }
+  
+  .cotizacion-form {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 500px; /* Ajusta el ancho */
+    text-align: center;
+  }
+  
+  .cotizacion-form h2 {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  
+  /* Centrar los elementos del formulario */
+  .cotizacion-form label {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: left;
+    display: block;
+    margin-top: 15px;
+  }
+  
+  .cotizacion-form input,
+  .cotizacion-form select,
+  .cotizacion-form textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    background: #f8f8f8;
+    transition: 0.3s;
+  }
+  
+  .cotizacion-form textarea {
+    resize: vertical;
+    height: 80px;
+  }
+  
+  /* Botón en rojo */
+  .cotizacion-form button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    background: #e74c3c; /* Rojo */
+    color: white;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 15px;
+    transition: 0.3s;
+  }
+  
+  .cotizacion-form button:hover {
+    background: #c0392b; /* Rojo más oscuro */
+    transform: scale(1.05);
+  }
+  
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .cotizacion-form {
+      max-width: 90%;
+    }
+  }
+  
+  

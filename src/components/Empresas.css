@@ -1,0 +1,250 @@
+/* 🔹 General */
+.empresas-page {
+    text-align: center;
+    font-family: "Arial", sans-serif;
+    background-color: #f8f8f8;
+  }
+  
+  /* 🎬 Hero con Video */
+  .hero-section {
+    position: relative;
+    width: 100%;
+    height: 90vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: -1;
+  }
+  
+  .hero-section video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .hero-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 30px;
+    border-radius: 10px;
+    width: 80%;
+  }
+  
+  .hero-overlay h1 {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+  }
+  
+  .hero-overlay p {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+  }
+  
+  .cta-button {
+    background: #ff9800;
+    color: white;
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .cta-button:hover {
+    background: #e68900;
+  }
+  
+  /* 📈 Beneficios */
+  .benefits-section {
+    padding: 50px 20px;
+    background: white;
+  }
+  
+  .benefits-section h2 {
+    font-size: 2.2rem;
+    margin-bottom: 15px;
+    color: #b71c1c;
+  }
+  
+  .benefits-section .description {
+    font-size: 1.1rem;
+    max-width: 800px;
+    margin: 0 auto 30px auto;
+    color: #555;
+  }
+  
+  .benefits-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+  }
+  
+  .benefit-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+  }
+  
+  .benefit-box:hover {
+    transform: translateY(-5px);
+  }
+  
+  .benefit-box h3 {
+    font-size: 1.3rem;
+    margin-top: 10px;
+  }
+  
+  .benefit-box p {
+    font-size: 1rem;
+    color: #666;
+  }
+  
+  .icon {
+    font-size: 2rem;
+    color: #ff9800;
+  }
+  
+  /* 🚚 Vehículos */
+  .vehicles-section {
+    background: #f0f0f0;
+    padding: 50px 20px;
+  }
+  
+  .vehicles-section h2 {
+    font-size: 2.2rem;
+    color: #b71c1c;
+  }
+  
+  .vehicles-section p {
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    color: #555;
+  }
+  
+  .vehicles-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+  }
+  
+  .vehicle-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 200px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .vehicle-box img {
+    width: 100px;
+    height: auto;
+    margin-bottom: 10px;
+  }
+  
+  .vehicle-box p {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  /* ❤️ Opiniones de Clientes */
+  .testimonials-section {
+    padding: 50px 20px;
+    background: white;
+  }
+  
+  .testimonials-section h2 {
+    font-size: 2.2rem;
+    color: #b71c1c;
+  }
+  
+  .testimonials-slider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .testimonial {
+    background: #fff8e1;
+    padding: 20px;
+    border-radius: 10px;
+    width: 60%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .testimonial p {
+    font-size: 1.1rem;
+    color: #333;
+  }
+  
+  .testimonial span {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #777;
+  }
+  
+  /* ❓ Preguntas Frecuentes */
+  .faq-section {
+    padding: 50px 20px;
+    background: #f8f8f8;
+  }
+  
+  .faq-section h2 {
+    font-size: 2.2rem;
+    color: #b71c1c;
+  }
+  
+  .faq {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  details {
+    background: white;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  summary {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  details p {
+    margin-top: 10px;
+    font-size: 1rem;
+    color: #555;
+  }
+  .video-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* Lo manda al fondo */
+    pointer-events: none; /* Permite hacer clic en los elementos que están encima */
+  }
+  
+  .video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }

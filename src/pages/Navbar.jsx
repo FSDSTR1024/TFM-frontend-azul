@@ -24,12 +24,12 @@ const Navbar = () => {
       {/* Menú lateral */}
       <nav className={`side-menu ${menuOpen ? "open" : ""}`}>
         <ul>
-          <li><a href="#business">Empresas</a></li>
-          <li><a href="#personal">Particulares</a></li>
-          <li><a href="#driver">Conductores</a></li>
-          <li><a href="#pricing">Precios</a></li>
-          <li><Link to="/SignUp">Regístrate</Link></li>
-          <li><Link to="/UserProfile">Mi Perfil</Link></li>
+        <li><Link to="/empresas">Empresas</Link></li>
+    <li><Link to="/particulares">Particulares</Link></li>
+    <li><Link to="/conductores">Conductores</Link></li>
+    <li><Link to="/precios">Precios</Link></li>
+    <li><Link to="/SignUp">Regístrate</Link></li>
+    <li><Link to="/UserProfile">Mi Perfil</Link></li>
         </ul>
 
         {/* Botón para abrir Login Popup */}
