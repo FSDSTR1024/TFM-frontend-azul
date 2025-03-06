@@ -15,7 +15,10 @@ const Particulares = () => {
         </video>
         <div className="hero-overlay">
           <h1>Envíos Rápidos y Seguros para Todos</h1>
-          <p>En FlashGo nos encargamos de tus paquetes con la máxima seguridad y rapidez.</p>
+          <p>
+            En FlashGo nos encargamos de tus paquetes con la máxima seguridad y
+            rapidez.
+          </p>
           <button className="cta-button">Empieza Ahora</button>
         </div>
       </section>
@@ -26,7 +29,10 @@ const Particulares = () => {
         <div className="benefits-container">
           <div className="benefit">
             <h3>📦 Envíos en el Día</h3>
-            <p>Recoge y entrega tu paquete el mismo día con nuestra red de mensajeros.</p>
+            <p>
+              Recoge y entrega tu paquete el mismo día con nuestra red de
+              mensajeros.
+            </p>
           </div>
           <div className="benefit">
             <h3>📍 Seguimiento en Tiempo Real</h3>
@@ -44,7 +50,9 @@ const Particulares = () => {
         <h2>Cómo Funciona</h2>
         <div className="process-steps">
           <div className="step">📝 Regístrate en la plataforma</div>
-          <div className="step">📍 Ingresa la dirección de recogida y entrega</div>
+          <div className="step">
+            📍 Ingresa la dirección de recogida y entrega
+          </div>
           <div className="step">🚚 Escoge el tipo de transporte</div>
           <div className="step">📦 ¡Tu paquete está en camino!</div>
         </div>
@@ -55,12 +63,14 @@ const Particulares = () => {
         <h2>Lo que dicen nuestros clientes</h2>
         <div className="testimonials">
           <blockquote>
-            “FlashGo me ha salvado varias veces con entregas de último minuto. ¡Increíble servicio!”
+            “FlashGo me ha salvado varias veces con entregas de último minuto.
+            ¡Increíble servicio!”
             <br />
             <strong>- Andrea M.</strong>
           </blockquote>
           <blockquote>
-            “Seguro, rápido y confiable. Siempre confío en FlashGo para mis envíos personales.”
+            “Seguro, rápido y confiable. Siempre confío en FlashGo para mis
+            envíos personales.”
             <br />
             <strong>- Carlos G.</strong>
           </blockquote>
@@ -73,7 +83,10 @@ const Particulares = () => {
         <div className="faq">
           <details>
             <summary>¿Cuánto tiempo tarda un envío?</summary>
-            <p>Ofrecemos entregas el mismo día en la mayoría de las ciudades principales.</p>
+            <p>
+              Ofrecemos entregas el mismo día en la mayoría de las ciudades
+              principales.
+            </p>
           </details>
           <details>
             <summary>¿Cómo realizo un seguimiento de mi paquete?</summary>

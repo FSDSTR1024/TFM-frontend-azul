@@ -3,12 +3,13 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
 }
 
 .main-page {
   display: flex;
   flex-direction: column;
+  font-family: "Arial", sans-serif;
   color: #333;
   min-height: 100vh;
 }
@@ -18,7 +19,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #B71C1C;
+  background-color: #b71c1c;
   color: white;
   padding: 1rem 2rem;
   box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.1);
@@ -38,10 +39,18 @@
   background: black;
 }
 
-.video-section video {
-  width: 100%;
-  max-height: 500px;
-  object-fit: cover;
+/* Menú lateral */
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: -250px;
+  width: 250px;
+  height: 100vh;
+  background-color: #b71c1c;
+  color: white;
+  padding-top: 2rem;
+  transition: left 0.3s ease-in-out;
+  box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* 🏆 Why Choose Us */
@@ -54,7 +63,7 @@
 .why-choose-us h2 {
   font-size: 2rem;
   margin-bottom: 20px;
-  color: #B71C1C;
+  color: #b71c1c;
 }
 
 .benefits {
@@ -64,8 +73,8 @@
   gap: 20px;
 }
 .side-menu ul li a {
-  color: white;  /* Cambia el color del texto a blanco */
-  text-decoration: none;  /* Quita el subrayado */
+  color: white; /* Cambia el color del texto a blanco */
+  text-decoration: none; /* Quita el subrayado */
   font-size: 1.2rem;
   display: block;
   transition: background 0.3s;
@@ -74,7 +83,7 @@
 /* Cuando el usuario pasa el mouse */
 .side-menu ul li a:hover {
   background: rgba(255, 255, 255, 0.2);
-  text-decoration: none;  /* Asegura que no aparezca el subrayado al pasar el mouse */
+  text-decoration: none; /* Asegura que no aparezca el subrayado al pasar el mouse */
 }
 .benefit {
   background: white;
@@ -92,7 +101,7 @@
 
 .benefit .icon {
   font-size: 3rem;
-  color: #B71C1C;
+  color: #b71c1c;
   margin-bottom: 10px;
 }
 
@@ -100,7 +109,7 @@
   margin-top: 20px;
   padding: 15px 30px;
   font-size: 1.2rem;
-  background-color: #B71C1C;
+  background-color: #b71c1c;
   color: white;
   border: none;
   cursor: pointer;
@@ -109,7 +118,7 @@
 }
 
 .btn-try-now:hover {
-  background-color: #8E1414;
+  background-color: #8e1414;
 }
 
 /* 🚚 Vehicle Section */
@@ -122,7 +131,7 @@
 .vehicle-section h2 {
   font-size: 2rem;
   margin-bottom: 20px;
-  color: #B71C1C;
+  color: #b71c1c;
 }
 
 .vehicle-grid {
@@ -154,7 +163,7 @@
 .hero {
   text-align: center;
   padding: 3rem 1rem;
-  background: linear-gradient(135deg, #B71C1C, #FFD54F);
+  background: linear-gradient(135deg, #b71c1c, #ffd54f);
   color: white;
   display: flex;
   flex-direction: column;
@@ -174,7 +183,7 @@
 
 .hero .btn-primary {
   padding: 0.8rem 1.5rem;
-  background-color: #FFD54F;
+  background-color: #ffd54f;
   color: #333;
   font-weight: bold;
   border: none;
@@ -183,23 +192,17 @@
 }
 
 .hero .btn-primary:hover {
-  background-color: #F4E04D;
+  background-color: #f4e04d;
 }
 
-/* 📱 Responsive */
-@media (max-width: 768px) {
-  .benefits {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .vehicle-grid {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .vehicle-box {
-    width: 80%;
-  }
+/* Footer */
+.footer {
+  background-color: #f8f8f8;
+  color: #333;
+  padding: 2rem 1rem;
+  border-top: 2px solid #b71c1c;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-

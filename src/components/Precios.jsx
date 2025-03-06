@@ -82,25 +82,29 @@ const Precios = () => {
       <section className="calculadora">
         <h2>Calcula tu Envío</h2>
         <div className="calculadora-form">
-          <input 
-            type="number" 
-            placeholder="Peso (kg)" 
-            value={peso} 
-            onChange={(e) => setPeso(e.target.value)} 
+          <input
+            type="number"
+            placeholder="Peso (kg)"
+            value={peso}
+            onChange={(e) => setPeso(e.target.value)}
           />
-          <input 
-            type="number" 
-            placeholder="Distancia (km)" 
-            value={distancia} 
-            onChange={(e) => setDistancia(e.target.value)} 
+          <input
+            type="number"
+            placeholder="Distancia (km)"
+            value={distancia}
+            onChange={(e) => setDistancia(e.target.value)}
           />
           <button onClick={calcularPrecio}>Calcular</button>
         </div>
-        {precioEstimado && <p className="resultado">Precio Estimado: <strong>{precioEstimado}€</strong></p>}
+        {precioEstimado && (
+          <p className="resultado">
+            Precio Estimado: <strong>{precioEstimado}€</strong>
+          </p>
+        )}
       </section>
 
-     {/* 📝 Formulario de Cotización - Estilo Vertical */}
-     <section className="cotizacion">
+      {/* 📝 Formulario de Cotización - Estilo Vertical */}
+      <section className="cotizacion">
         <h2>Solicita una Cotización</h2>
         <form className="cotizacion-form">
           <label>Nombre Completo</label>
@@ -140,4 +144,3 @@ const Precios = () => {
 };
 
 export default Precios;
-

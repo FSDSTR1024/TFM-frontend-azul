@@ -1,7 +1,13 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useState } from "react";
 import "./MainPage2.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheckCircle, faShippingFast, faClock, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+  faCheckCircle,
+  faShippingFast,
+  faClock,
+  faShieldAlt,
+} from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
@@ -12,12 +18,14 @@ export const MainPage2 = () => {
       {/* Navbar */}
       <Navbar />
 
-      {/* Sección de Video */}
-      <section className="video-section">
-        <video autoPlay loop muted>
-          <source src="/presentacion.mp4" type="video/mp4" />
-          Tu navegador no soporta videos.
-        </video>
+      {/* Hero Section */}
+      <section className="hero">
+        <h1>Envíos Rápidos y Seguros con FlashGo</h1>
+        <p>
+          Plataforma de envíos a demanda. Escoge tu método ideal y comienza
+          ahora.
+        </p>
+        <button className="btn-primary">Reserva Ahora</button>
       </section>
 
       {/* Sección Por qué elegirnos */}

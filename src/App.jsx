@@ -4,31 +4,34 @@ import { MainPage2 } from "./pages/MainPage2";
 import { LogIn } from "./pages/LogIn";
 import { SignUp } from "./pages/SignUp";
 import UserProfile from "./components/UserProfile";
-import Empresas from "./components/Empresas";
-import Particulares from "./components/Particulares";
-import Conductores from "./components/Conductores";
-import Precios from "./components/Precios";
+import OrderPage from "./components/OrderPage";
+import DriverProfile from "./components/DriverProfile";
+import CompanyProfile from "./components/CompanyProfile";
+import Driver from "./components/Driver";
+import DriverPage from "./components/DriverPage";
 
+import { AuthProvider } from "./components/AuthContext";
 function App() {
   return (
-    <BrowserRouter>
-      
-      <Routes>
-        {/* Página principal */}
-        <Route path="/" element={<MainPage2 />} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Página principal */}
+          <Route path="/" element={<MainPage2 />} />
+          {/* Páginas de la Navbar */}
 
-        {/* Páginas de la Navbar */}
-        <Route path="/empresas" element={<Empresas />} />
-        <Route path="/particulares" element={<Particulares />} />
-        <Route path="/conductores" element={<Conductores />} />
-        <Route path="/precios" element={<Precios />} />
-
-        {/* Autenticación y Perfil */}
-        <Route path="/login" element={<LogIn />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/userprofile" element={<UserProfile />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Autenticación y Perfil */}
+          <Route path="/login" element={<LogIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/userprofile" element={<UserProfile />} />
+          <Route path="/Driverprofile" element={<DriverProfile />} />
+          <Route path="/Companyprofile" element={<CompanyProfile />} />
+          <Route path="/Driver" element={<Driver />} />
+          <Route path="/OrderPage" element={<OrderPage />} />
+          <Route path="/DriverPage" element={<DriverPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

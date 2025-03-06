@@ -1,0 +1,149 @@
+.driver-profile {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  gap: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+.driver-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.driver-role {
+  color: #555;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.star-icon {
+  color: gold;
+}
+
+.details-card,
+.earnings-card,
+.order-history-card {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.earnings-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: green;
+}
+
+.earnings-text {
+  color: #555;
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.order-id {
+  font-weight: bold;
+}
+
+.order-status {
+  color: #555;
+}
+
+.order-icon {
+  font-size: 20px;
+}
+
+.update-profile-button {
+  width: 100%;
+  background-color: blue;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.update-profile-button:hover {
+  background-color: darkblue;
+}
+.new-order-card {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+
+.accept-order-button {
+  background-color: #4caf50; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 20px 0;
+  cursor: pointer;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.accept-order-button:hover {
+  background-color: #45a049;
+}
+.decline-order-button {
+  background-color: #ab2314; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 20px 0;
+  cursor: pointer;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.decline-order-button:hover {
+  background-color: #ab2314;
+}

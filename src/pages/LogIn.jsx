@@ -1,43 +1,44 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../components/AuthContext";
 import "./LogIn.css";
-
 export const LogIn = ({ closeModal }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext); // Accedemos a la función login del contexto
   const validateForm = () => {
     let newErrors = {};
     if (!email.includes("@")) newErrors.email = "Ingrese un email válido.";
-    if (password.length < 6) newErrors.password = "La contraseña debe tener al menos 6 caracteres.";
+    if (password.length < 6)
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return; // Si hay errores, no se envía
-
-    const response = await fetch("http://localhost:3000/login", {
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    const json = await response.json();
-    alert("Inicio de sesión exitoso 🚀");
-    closeModal(); // Cerrar modal tras iniciar sesión
+    if (!validateForm()) return;
+    const response = await login(email, password); // Llamamos a la función login del contexto
+    if (response.success) {
+      closeModal(); // Cierra el modal después de iniciar sesión
+      navigate("/userprofile"); // Redirige al perfil de usuario
+    } else {
+      setErrors(
+        response.errors || { message: "Email o contraseña incorrectos" }
+      );
+    }
   };
-
   return (
     <>
       {/* Fondo Oscuro */}
       <div className="overlay" onClick={closeModal}></div>
-
       {/* Modal de Login */}
       <div className="login-modal">
-        <button className="close-button" onClick={closeModal}>X</button>
+        <button className="close-button" onClick={closeModal}>
+          X
+        </button>
         <h2>Iniciar Sesión</h2>
-
         <form onSubmit={handleSubmit}>
           <label>Email</label>
           <input
@@ -47,7 +48,6 @@ export const LogIn = ({ closeModal }) => {
             onChange={(e) => setEmail(e.target.value)}
           />
           {errors.email && <p className="error">{errors.email}</p>}
-
           <label>Contraseña</label>
           <input
             type="password"
@@ -56,7 +56,7 @@ export const LogIn = ({ closeModal }) => {
             onChange={(e) => setPassword(e.target.value)}
           />
           {errors.password && <p className="error">{errors.password}</p>}
-
+          {errors.message && <p className="error">{errors.message}</p>}
           <button type="submit">Entrar</button>
         </form>
       </div>
@@ -65,5 +65,3 @@ export const LogIn = ({ closeModal }) => {
 };
 
 export default LogIn;
-
-
