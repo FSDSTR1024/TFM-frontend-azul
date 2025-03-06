@@ -7,8 +7,8 @@ import UserProfile from "./components/UserProfile";
 import OrderPage from "./components/OrderPage";
 import DriverProfile from "./components/DriverProfile";
 import CompanyProfile from "./components/CompanyProfile";
-import Driver from "./components/Driver";
 import DriverPage from "./components/DriverPage";
+import Chat2 from "./components/Chat2";
 
 import { AuthProvider } from "./components/AuthContext";
 function App() {
@@ -26,9 +26,9 @@ function App() {
           <Route path="/userprofile" element={<UserProfile />} />
           <Route path="/Driverprofile" element={<DriverProfile />} />
           <Route path="/Companyprofile" element={<CompanyProfile />} />
-          <Route path="/Driver" element={<Driver />} />
           <Route path="/OrderPage" element={<OrderPage />} />
           <Route path="/DriverPage" element={<DriverPage />} />
+          <Route path="/Chat2" element={<Chat2 />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
