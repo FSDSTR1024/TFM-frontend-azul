@@ -1,208 +1,123 @@
-import React, { useState } from "react";
-import { Star, CheckCircle, Clock } from "lucide-react";
+import React, { useState, useEffect, useContext } from "react";
 import Navbar from "../pages/Navbar";
 import Footer from "../pages/Footer";
+import { AuthContext } from "../components/AuthContext";
+import { Link } from "react-router-dom";
+import Chat2 from "../components/Chat2";
+import axios from "axios";
 import "./DriverProfile.css";
-
-// Chat Component
-const Chat = ({ orderId, onClose }) => {
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
-
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      setMessages([...messages, { text: message, sender: "driver" }]);
-      setMessage("");
+function DriverProfile() {
+  const { user, fetchUserProfile } = useContext(AuthContext);
+  const [orders, setOrders] = useState([]);
+  const [proofImage, setProofImage] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  useEffect(() => {
+    fetchUserProfile();
+    fetch("http://localhost:5000/api/orders/available", {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setOrders(data));
+    fetch("http://localhost:5000/api/notifications", {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setNotifications(data));
+  }, []);
+  const handleAcceptOrder = async (orderId) => {
+    await fetch(`http://localhost:5000/api/orders/${orderId}/accept`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    setOrders((prev) =>
+      prev.map((order) =>
+        order._id === orderId ? { ...order, status: "accepted" } : order
+      )
+    );
+  };
+  const handleUploadProof = async (orderId) => {
+    if (!proofImage) {
+      alert("Debes subir una imagen como prueba de entrega");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", proofImage);
+    formData.append("upload_preset", "flashgo_preset");
+    try {
+      const uploadResponse = await axios.post(
+        "https://api.cloudinary.com/v1_1/drt2lron6/image/upload",
+        formData
+      );
+      const imageUrl = uploadResponse.data.secure_url;
+      await fetch(`http://localhost:5000/api/orders/${orderId}/upload-proof`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ proofOfSend: imageUrl }),
+      });
+      alert("Prueba de entrega subida correctamente");
+    } catch (error) {
+      console.error("Error uploading proof image:", error);
+      alert("Hubo un error al subir la imagen");
     }
   };
-
   return (
-    <div className="chat-container">
-      <div className="chat-header">
-        <h3>Chat for Order #{orderId}</h3>
-        <button onClick={onClose} className="close-chat-button">
-          Close
-        </button>
-      </div>
-      <div className="chat-messages">
-        {messages.map((msg, index) => (
-          <div key={index} className={`message ${msg.sender}`}>
-            {msg.text}
-          </div>
-        ))}
-      </div>
-      <div className="chat-input">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-        />
-        <button onClick={handleSendMessage}>Send</button>
-      </div>
-    </div>
-  );
-};
-
-function DriverProfile() {
-  const [orders, setOrders] = useState([
-    {
-      id: 12345,
-      name: "Juan",
-      pickUp: "Calle ginzo de limia 24",
-      dropOff: "Calle de juan de Mariana",
-      price: "8 Euros",
-      status: "pending", // 'pending', 'accepted', 'declined', 'completed'
-    },
-    {
-      id: 12346,
-      name: "Maria",
-      pickUp: "Calle de la Luna 15",
-      dropOff: "Calle del Sol 42",
-      price: "10 Euros",
-      status: "pending", // 'pending', 'accepted', 'declined', 'completed'
-    },
-  ]);
-
-  const [activeChatOrderId, setActiveChatOrderId] = useState(null); // Track which order has an active chat
-
-  const handleAcceptOrder = (orderId) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === orderId ? { ...order, status: "accepted" } : order
-      )
-    );
-    setActiveChatOrderId(orderId); // Open chat for the accepted order
-  };
-
-  const handleDeclineOrder = (orderId) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === orderId ? { ...order, status: "declined" } : order
-      )
-    );
-    setActiveChatOrderId(null); // Close chat if declined
-  };
-
-  const handleCompleteOrder = (orderId) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === orderId ? { ...order, status: "completed" } : order
-      )
-    );
-    setActiveChatOrderId(null); // Close chat when order is completed
-  };
-
-  return (
-    <div className="driver-profile">
+    <div className="driver-profile-container">
       <Navbar />
-      {/* Profile Section */}
-      <div className="profile-card">
-        <img
-          className="avatar"
-          src="https://via.placeholder.com/150"
-          alt="Driver"
-        />
-        <div>
-          <h2 className="driver-name">Juan Dela Cruz</h2>
-          <p className="driver-role">Delivery Driver - Lalamove</p>
-          <div className="rating">
-            <Star className="star-icon" />
-            <span className="rating-value">4.8</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Driver Details */}
-      <div className="details-card">
-        <h3 className="card-title">Driver Details</h3>
-        <p>
-          <strong>Vehicle:</strong> Motorcycle
-        </p>
-        <p>
-          <strong>Plate Number:</strong> ABC-1234
-        </p>
-        <p>
-          <strong>Completed Deliveries:</strong> 1,245
-        </p>
-      </div>
-
-      {/* Earnings Section */}
-      <div className="earnings-card">
-        <h3 className="card-title">Earnings</h3>
-        <p className="earnings-value">₱50,000</p>
-        <p className="earnings-text">Total Earnings this Month</p>
-      </div>
-
-      {/* Order History */}
-      <div className="order-history-card">
-        <h3 className="card-title">Order History</h3>
-        <div className="order-list">
-          {orders.map((order) => (
-            <div className="order-item" key={order.id}>
-              <div>
-                <p className="order-id">Order #{order.id}</p>
-                <p className="order-status">{order.status}</p>
-              </div>
-              {order.status === "completed" ? (
-                <CheckCircle className="order-icon" />
-              ) : (
-                <Clock className="order-icon" />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Incoming Orders */}
-      <div className="new-order-card">
-        <h3 className="card-title">Incoming Order</h3>
-        <div className="order-list">
-          {orders
-            .filter((order) => order.status === "pending")
-            .map((order) => (
-              <div className="order-item" key={order.id}>
-                <div>
-                  <p className="order-id">Order #{order.id}</p>
-                  <p className="order-name">{order.name}</p>
-                  <p className="order-pick-up">{order.pickUp}</p>
-                  <p className="order-drop-off">{order.dropOff}</p>
-                  <p className="order-price">Price: {order.price}</p>
-                  <button
-                    className="accept-order-button"
-                    onClick={() => handleAcceptOrder(order.id)}
-                  >
-                    Accept Order
+      <h2>Perfil del Conductor</h2>
+      <div className="orders-section">
+        <h3>Órdenes Disponibles</h3>
+        {orders.length > 0 ? (
+          <ul>
+            {orders.map((order) => (
+              <li key={order._id}>
+                <p>Pedido #{order._id}</p>
+                <p>Recoger: {order.pickupLocation}</p>
+                <p>Entregar: {order.dropoffLocation}</p>
+                <p>Precio: {order.price}€</p>
+                {order.status === "pending" && (
+                  <button onClick={() => handleAcceptOrder(order._id)}>
+                    Aceptar Orden
                   </button>
-                  <button
-                    className="decline-order-button"
-                    onClick={() => handleDeclineOrder(order.id)}
-                  >
-                    Decline Order
-                  </button>
-                </div>
-                <Clock className="order-icon" />
-              </div>
+                )}
+                {order.status === "accepted" && (
+                  <>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setProofImage(e.target.files[0])}
+                    />
+                    <button onClick={() => handleUploadProof(order._id)}>
+                      Subir Prueba de Entrega
+                    </button>
+                  </>
+                )}
+              </li>
             ))}
-        </div>
+          </ul>
+        ) : (
+          <p>No hay órdenes disponibles.</p>
+        )}
       </div>
-
-      {/* Chat for Accepted Orders */}
-      {orders
-        .filter((order) => order.status === "accepted")
-        .map((order) => (
-          <Chat
-            key={order.id}
-            orderId={order.id}
-            onClose={() => handleCompleteOrder(order.id)} // Close chat and mark order as completed
-          />
-        ))}
-
-      {/* Update Profile Button */}
-      <button className="update-profile-button">Update Profile</button>
+      <div className="notifications-section">
+        <h3>Notificaciones</h3>
+        {notifications.length > 0 ? (
+          <ul>
+            {notifications.map((notif, index) => (
+              <li key={index}>{notif.message}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>No tienes notificaciones.</p>
+        )}
+      </div>
       <Footer />
     </div>
   );
 }
-
 export default DriverProfile;

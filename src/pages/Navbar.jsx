@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useContext, useEffect } from "react";
 import "./Navbar.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -55,7 +56,7 @@ const Navbar = () => {
           </li>
 
           <li>
-            <a href="#pricing">Precios</a>
+            <Link to="/Precios">Precios</Link>
           </li>
           {!user && (
             <li>

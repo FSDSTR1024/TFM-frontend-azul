@@ -1,98 +1,77 @@
-import { useState } from "react";
+// eslint-disable-next-line no-unused-vars
+import React, { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../components/AuthContext";
+import { useParams } from "react-router-dom";
+import io from "socket.io-client";
+import "./Chat2.css";
 
-import { useEffect } from "react";
-
-function Chat2() {
-  const [orderStatus, setOrderStatus] = useState("pending");
-  const [chatVisible, setChatVisible] = useState(false);
+const socket = io("http://localhost:5000");
+const Chat2 = () => {
+  const { user } = useContext(AuthContext);
+  const { orderId } = useParams();
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-
+  const [newMessage, setNewMessage] = useState("");
   useEffect(() => {
-    if (orderStatus === "accepted") {
-      setChatVisible(true);
-    } else if (orderStatus === "completed") {
-      setChatVisible(false);
-    }
-  }, [orderStatus]);
-
-  const sendMessage = () => {
-    if (input.trim() !== "") {
-      setMessages([...messages, { text: input, sender: "user" }]);
-      setInput("");
+    socket.emit("joinRoom", { orderId });
+    socket.on(`chat:${orderId}`, (message) => {
+      setMessages((prevMessages) => [...prevMessages, message]);
+    });
+    return () => {
+      socket.off(`chat:${orderId}`);
+    };
+  }, [orderId]);
+  const sendMessage = async () => {
+    if (!newMessage.trim()) return;
+    const messageData = {
+      orderId,
+      senderId: user.id,
+      receiverId: "other_user_id", // Esto debe actualizarse con la lógica correcta
+      message: newMessage,
+    };
+    try {
+      const response = await fetch("http://localhost:5000/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(messageData),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setNewMessage("");
+      }
+    } catch (error) {
+      console.error("Error al enviar mensaje:", error);
     }
   };
-
   return (
-    <div style={{ padding: "20px" }}>
-      <div
-        style={{
-          padding: "15px",
-          marginBottom: "15px",
-          border: "1px solid #ccc",
-          borderRadius: "8px",
-        }}
-      >
-        <h2 style={{ fontSize: "20px", fontWeight: "bold" }}>
-          Order Status: {orderStatus}
-        </h2>
-        <button
-          style={{ marginTop: "10px" }}
-          onClick={() => setOrderStatus("accepted")}
-        >
-          Accept Order
-        </button>
-        <button
-          style={{ marginTop: "10px", marginLeft: "10px" }}
-          onClick={() => setOrderStatus("completed")}
-        >
-          Complete Order
-        </button>
-      </div>
-      {chatVisible && (
-        <div
-          style={{
-            padding: "15px",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-          }}
-        >
-          <h3 style={{ fontSize: "18px", fontWeight: "bold" }}>Chat</h3>
+    <div className="chat-container">
+      <h2>Chat del Pedido</h2>
+      <div className="chat-box">
+        {messages.map((msg, index) => (
           <div
-            style={{
-              border: "1px solid #ccc",
-              padding: "10px",
-              height: "150px",
-              overflowY: "auto",
-              marginBottom: "10px",
-            }}
+            key={index}
+            className={
+              msg.senderId === user.id ? "my-message" : "other-message"
+            }
           >
-            {messages.map((msg, index) => (
-              <p
-                key={index}
-                style={{ textAlign: msg.sender === "user" ? "right" : "left" }}
-              >
-                {msg.text}
-              </p>
-            ))}
+            <p>
+              <strong>
+                {msg.senderId === user.id ? "Tú" : "Conductor/Cliente"}:
+              </strong>{" "}
+              {msg.message}
+            </p>
           </div>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
-            style={{
-              padding: "8px",
-              width: "calc(100% - 16px)",
-              marginBottom: "10px",
-            }}
-          />
-          <button style={{ marginTop: "10px" }} onClick={sendMessage}>
-            Send
-          </button>
-        </div>
-      )}
+        ))}
+      </div>
+      <div className="chat-input">
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Escribe un mensaje..."
+        />
+        <button onClick={sendMessage}>Enviar</button>
+      </div>
     </div>
   );
-}
+};
 export default Chat2;

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../pages/Navbar";
 import Footer from "../pages/Footer";
-import Chat2 from "../components/Chat2";
+import Chat2 from "./Chat2";
 import "./UserProfile.css";
 import { BarChart2Icon } from "lucide-react";
 
