@@ -10,6 +10,7 @@ import DriverProfile from "./components/DriverProfile";
 import CompanyProfile from "./components/CompanyProfile";
 import DriverPage from "./components/DriverPage";
 import Precios from "./components/Precios";
+import UserOrders from "./components/UserOrders";
 
 import Chat2 from "./components/Chat2";
 import { AuthProvider } from "./components/AuthContext";
@@ -29,6 +30,7 @@ function App() {
           <Route path="/Companyprofile" element={<CompanyProfile />} />
           <Route path="/OrderForm" element={<OrderForm />} /> {/* Nueva ruta */}
           <Route path="/DriverPage" element={<DriverPage />} />
+          <Route path="/UserOrders" element={<UserOrders />} />
           <Route path="/Chat2" element={<Chat2 />} />
           <Route path="/Precios" element={<Precios />} />
         </Routes>
