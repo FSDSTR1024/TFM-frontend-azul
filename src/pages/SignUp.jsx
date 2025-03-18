@@ -5,7 +5,6 @@ import Navbar from "../pages/Navbar";
 import Footer from "../pages/Footer";
 import { AuthContext } from "../components/AuthContext";
 import "./SignUp.css";
-
 const CLOUDINARY_UPLOAD_PRESET = "FastGo";
 export const SignUp = () => {
   const { register, handleSubmit, formState, setError, watch } = useForm();
@@ -70,11 +69,11 @@ export const SignUp = () => {
         const loginResponse = await login(data.email, data.password);
         if (loginResponse.success) {
           if (data.userType === "driver") {
-            navigate("/DriverProfile");
+            navigate("/driverprofile"); // Cambiado a minúsculas para coincidir con la ruta definida
           } else if (data.userType === "company") {
-            navigate("/CompanyProfile");
+            navigate("/companyprofile"); // Cambiado a minúsculas para coincidir con la ruta definida
           } else {
-            navigate("/UserProfile");
+            navigate("/userprofile"); // Cambiado a minúsculas para coincidir con la ruta definida
           }
         }
       } else {

@@ -22,7 +22,19 @@ export const LogIn = ({ closeModal }) => {
     const response = await login(email, password); // Llamamos a la función login del contexto
     if (response.success) {
       closeModal(); // Cierra el modal después de iniciar sesión
-      navigate("/userprofile"); // Redirige al perfil de usuario
+
+      // Redirigir según el tipo de usuario
+      if (response.user && response.user.userType) {
+        if (response.user.userType === "driver") {
+          navigate("/driverprofile");
+        } else if (response.user.userType === "company") {
+          navigate("/companyprofile");
+        } else {
+          navigate("/userprofile");
+        }
+      } else {
+        navigate("/userprofile"); // Por defecto
+      }
     } else {
       setErrors(
         response.errors || { message: "Email o contraseña incorrectos" }
@@ -63,5 +75,4 @@ export const LogIn = ({ closeModal }) => {
     </>
   );
 };
-
 export default LogIn;

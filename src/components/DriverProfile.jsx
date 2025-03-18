@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
+import Navbar from "../pages/Navbar";
+import Footer from "../pages/Footer";
 import {
   Truck,
   Package,
@@ -15,19 +17,92 @@ import {
   AlertCircle,
   LogOut,
   Edit,
+  Bell,
+  MessageCircle,
 } from "lucide-react";
-//import { toast } from "react-toastify";
-//import "react-toastify/dist/ReactToastify.css";
+import "./DriverProfile.css";
 
 const DriverProfile = () => {
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
   const [updatedProfile, setUpdatedProfile] = useState({});
+  const [hasNewNotifications, setHasNewNotifications] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [activeChatOrder, setActiveChatOrder] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [messageInput, setMessageInput] = useState("");
+  const socketRef = useRef(null);
   const navigate = useNavigate();
+
+  // Connect to Socket.io server
+  useEffect(() => {
+    // Initialize socket
+    socketRef.current = io("http://localhost:5000", {
+      withCredentials: true,
+    });
+
+    // Get driver ID from auth token once it's loaded
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    // Listen for new orders
+    socketRef.current.on("newOrder", (order) => {
+      // Add to notifications
+      const newNotification = {
+        id: order._id,
+        message: `Nueva orden disponible: ${order.pickupLocation} a ${order.dropoffLocation}`,
+        createdAt: new Date(),
+        isRead: false,
+        type: "new-order",
+      };
+
+      setNotifications((prev) => [newNotification, ...prev]);
+      setHasNewNotifications(true);
+    });
+
+    // Listen for order status changes
+    socketRef.current.on("orderUpdated", (data) => {
+      // Update orders list if the updated order belongs to this driver
+      fetchDriverOrders();
+    });
+
+    // Listen for new chat messages
+    socketRef.current.on("newMessage", (data) => {
+      // If this message is for a chat we're currently in
+      if (activeChatOrder && activeChatOrder._id === data.orderId) {
+        setChatMessages((prev) => [...prev, data.message]);
+      } else {
+        // Add notification about new message
+        const newNotification = {
+          id: data.orderId,
+          message: `Nuevo mensaje en la Orden #${data.orderId.substring(
+            data.orderId.length - 6
+          )}`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "new-message",
+        };
+
+        setNotifications((prev) => [newNotification, ...prev]);
+        setHasNewNotifications(true);
+      }
+    });
+
+    return () => {
+      // Disconnect socket when component unmounts
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [navigate, activeChatOrder]);
 
   useEffect(() => {
     const fetchDriverData = async () => {
@@ -38,25 +113,36 @@ const DriverProfile = () => {
           return;
         }
 
-        // Fetch driver profile
-        const profileResponse = await axios.get("/api/driver/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // Fetch driver profile using token
+        const profileResponse = await fetch(
+          "http://localhost:5000/api/profile",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-        setProfile(profileResponse.data);
-        setUpdatedProfile(profileResponse.data);
+        if (!profileResponse.ok) {
+          throw new Error("Error al cargar el perfil");
+        }
+
+        const profileData = await profileResponse.json();
+        setProfile(profileData);
+        setUpdatedProfile(profileData);
 
         // Fetch driver orders
-        const ordersResponse = await axios.get("/api/orders/driver", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await fetchDriverOrders();
 
-        setOrders(ordersResponse.data);
+        // Fetch driver notifications
+        await fetchNotifications();
+
         setLoading(false);
       } catch (err) {
-        setError("Error loading profile data");
+        setError("Error cargando los datos del perfil");
         setLoading(false);
-        // toast.error("Failed to load profile data");
         console.error(err);
       }
     };
@@ -64,10 +150,50 @@ const DriverProfile = () => {
     fetchDriverData();
   }, [navigate]);
 
+  const fetchDriverOrders = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // For testing, we'll use available orders since we don't have a specific driver orders endpoint yet
+      const ordersResponse = await fetch(
+        "http://localhost:5000/api/orders/available",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!ordersResponse.ok) {
+        throw new Error("Error al cargar órdenes");
+      }
+
+      const ordersData = await ordersResponse.json();
+      setOrders(ordersData);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al cargar notificaciones");
+      }
+
+      const notificationsData = await response.json();
+      setNotifications(notificationsData);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
-    //toast.success("Logged out successfully");
   };
 
   const handleEditProfile = () => {
@@ -87,215 +213,403 @@ const DriverProfile = () => {
   const handleSaveProfile = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put("/api/driver/profile", updatedProfile, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch("http://localhost:5000/api/profile", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedProfile),
       });
+
+      if (!response.ok) {
+        throw new Error("Error al actualizar perfil");
+      }
 
       setProfile(updatedProfile);
       setIsEditing(false);
-      //toast.success("Profile updated successfully");
     } catch (err) {
-      //toast.error("Failed to update profile");
       console.error(err);
+    }
+  };
+
+  const handleAcceptOrder = async (orderId) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // API call to accept the order
+      const response = await fetch(
+        `http://localhost:5000/api/orders/${orderId}/accept`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Join the chat room for this order
+        socketRef.current.emit("joinChatRoom", orderId);
+
+        // Update orders list
+        fetchDriverOrders();
+
+        // Add notification
+        const newNotification = {
+          id: orderId,
+          message: `Has aceptado la Orden #${orderId.substring(
+            orderId.length - 6
+          )}`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "order-accepted",
+        };
+
+        setNotifications((prev) => [newNotification, ...prev]);
+      }
+    } catch (err) {
+      console.error("Error accepting order:", err);
+    }
+  };
+
+  const handleStartDelivery = async (orderId) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // API call to start the delivery
+      const response = await fetch(
+        `http://localhost:5000/api/orders/${orderId}/start`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update orders list
+        fetchDriverOrders();
+      }
+    } catch (err) {
+      console.error("Error starting delivery:", err);
+    }
+  };
+
+  const handleOpenChat = async (order) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Join chat room
+      socketRef.current.emit("joinChatRoom", order._id);
+
+      // Fetch chat messages
+      const response = await fetch(
+        `http://localhost:5000/api/chat/${order._id}/messages`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const data = await response.json();
+      setChatMessages(data.messages || []);
+      setActiveChatOrder(order);
+
+      // Mark related notifications as read
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === order._id && notif.type === "new-message"
+            ? { ...notif, isRead: true }
+            : notif
+        )
+      );
+    } catch (err) {
+      console.error("Error opening chat:", err);
+    }
+  };
+
+  const handleCloseChat = () => {
+    setActiveChatOrder(null);
+    setChatMessages([]);
+    setMessageInput("");
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !activeChatOrder) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // API call to send message
+      const response = await fetch(
+        `http://localhost:5000/api/chat/${activeChatOrder._id}/message`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text: messageInput }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Message will be added to chat via socket event
+        setMessageInput("");
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications((prev) =>
+      prev.map((notif) => ({ ...notif, isRead: true }))
+    );
+    setHasNewNotifications(false);
+  };
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications) {
+      markAllNotificationsAsRead();
     }
   };
 
   const getStatusBadge = (status) => {
     switch (status) {
       case "pending":
-        return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-            Pending
-          </span>
-        );
+        return <span className="status-badge status-pending">Pendiente</span>;
       case "accepted":
-        return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-            Accepted
-          </span>
-        );
+        return <span className="status-badge status-accepted">Aceptado</span>;
       case "in-progress":
         return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
-            In Progress
-          </span>
+          <span className="status-badge status-in-progress">En Progreso</span>
         );
       case "completed":
         return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-            Completed
-          </span>
+          <span className="status-badge status-completed">Completado</span>
         );
       case "cancelled":
-        return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-            Cancelled
-          </span>
-        );
+        return <span className="status-badge status-cancelled">Cancelado</span>;
       default:
-        return (
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-            {status}
-          </span>
-        );
+        return <span className="status-badge">{status}</span>;
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-xl font-semibold text-gray-700">Loading...</div>
+      <div className="loading-container">
+        <div className="loading-spinner">Cargando...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-xl font-semibold text-red-500">{error}</div>
+      <div className="error-container">
+        <div className="error-message">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="bg-blue-600 text-white">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">FlashGo Driver</h1>
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-1 bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg"
-              aria-label="Logout"
-            >
-              <LogOut size={16} />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="driver-profile-container">
+      <Navbar />
 
-      {profile && (
-        <div className="container mx-auto px-4 py-6">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="driver-profile-main">
+        {profile && (
+          <div className="profile-content">
             {/* Profile Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-6">
-              <div className="flex flex-col md:flex-row md:items-center">
-                <div className="bg-white text-blue-600 rounded-full p-4 mr-6 mb-4 md:mb-0">
+            <div className="profile-header">
+              <div className="profile-header-content">
+                <div className="profile-avatar">
                   <User size={48} />
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold">{`${profile.firstName} ${profile.lastName}`}</h2>
-                  <p className="flex items-center mt-2">
-                    <Truck className="mr-2" size={16} />
-                    {profile.vehicleType}
+                <div className="profile-info">
+                  <h2 className="profile-name">{`${profile.firstName} ${profile.lastName}`}</h2>
+                  <p className="profile-detail">
+                    <Truck className="icon" size={16} />
+                    {profile.vehicleType || "No especificado"}
                   </p>
-                  <p className="flex items-center mt-1">
-                    <MapPin className="mr-2" size={16} />
-                    {profile.workCity}
+                  <p className="profile-detail">
+                    <MapPin className="icon" size={16} />
+                    {profile.workCity || "No especificado"}
                   </p>
                 </div>
-                <div className="mt-4 md:mt-0">
-                  <div className="inline-flex bg-blue-700 text-white rounded-full px-4 py-2 font-medium">
-                    Active Driver
+                <div className="profile-status">
+                  <div className="status-badge driver-active">
+                    Conductor Activo
+                  </div>
+                  <div className="notification-bell">
+                    <button
+                      onClick={toggleNotifications}
+                      className="notification-button"
+                      aria-label="Notificaciones"
+                    >
+                      <Bell size={20} />
+                      {hasNewNotifications && (
+                        <span className="notification-indicator"></span>
+                      )}
+                    </button>
+
+                    {/* Notifications Dropdown */}
+                    {showNotifications && (
+                      <div className="notifications-dropdown">
+                        <div className="notifications-header">
+                          <h3>Notificaciones</h3>
+                          <button
+                            onClick={markAllNotificationsAsRead}
+                            className="mark-read-button"
+                          >
+                            Marcar todo como leído
+                          </button>
+                        </div>
+                        <div className="notifications-list">
+                          {notifications.length > 0 ? (
+                            notifications.map((notif, idx) => (
+                              <div
+                                key={idx}
+                                className={`notification-item ${
+                                  notif.isRead ? "" : "unread"
+                                }`}
+                              >
+                                <p className="notification-message">
+                                  {notif.message}
+                                </p>
+                                <p className="notification-time">
+                                  {new Date(notif.createdAt).toLocaleString()}
+                                </p>
+                                {notif.type === "new-order" && (
+                                  <button
+                                    onClick={() => handleAcceptOrder(notif.id)}
+                                    className="accept-button"
+                                  >
+                                    Aceptar
+                                  </button>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="no-notifications">
+                              No hay notificaciones
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Tab Navigation */}
-            <div className="bg-gray-50 px-6 border-b">
-              <nav className="flex -mb-px">
-                <button
-                  onClick={() => setActiveTab("profile")}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === "profile"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                  aria-label="Profile Information"
-                >
-                  Profile Information
-                </button>
-                <button
-                  onClick={() => setActiveTab("orders")}
-                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ml-8 ${
-                    activeTab === "orders"
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                  aria-label="Orders"
-                >
-                  Orders
-                </button>
-              </nav>
+            <div className="profile-tabs">
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={activeTab === "profile" ? "active" : ""}
+              >
+                Información Personal
+              </button>
+              <button
+                onClick={() => setActiveTab("orders")}
+                className={activeTab === "orders" ? "active" : ""}
+              >
+                Mis Órdenes
+              </button>
+              <button
+                onClick={() => setActiveTab("notifications")}
+                className={activeTab === "notifications" ? "active" : ""}
+              >
+                Notificaciones
+                {hasNewNotifications && (
+                  <span className="badge">
+                    {notifications.filter((n) => !n.isRead).length}
+                  </span>
+                )}
+              </button>
             </div>
 
             {/* Tab Content */}
-            <div className="p-6">
+            <div className="tab-content">
               {activeTab === "profile" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Personal Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Personal Information
-                    </h3>
-
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-start mb-3">
-                        <Mail className="text-gray-400 mt-1" size={18} />
-                        <div className="ml-3">
-                          <p className="text-sm text-gray-500">Email</p>
+                <div className="profile-details">
+                  <div className="profile-section">
+                    <h3>Información Personal</h3>
+                    <div className="info-card">
+                      <div className="info-item">
+                        <Mail className="icon" size={18} />
+                        <div>
+                          <p className="info-label">Email</p>
                           {isEditing ? (
                             <input
                               type="email"
                               name="email"
                               value={updatedProfile.email}
                               onChange={handleChange}
-                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                              className="edit-input"
                               required
                             />
                           ) : (
-                            <p className="font-medium">{profile.email}</p>
+                            <p className="info-value">{profile.email}</p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-start mb-3">
-                        <Phone className="text-gray-400 mt-1" size={18} />
-                        <div className="ml-3">
-                          <p className="text-sm text-gray-500">Phone Number</p>
+                      <div className="info-item">
+                        <Phone className="icon" size={18} />
+                        <div>
+                          <p className="info-label">Teléfono</p>
                           {isEditing ? (
                             <input
                               type="tel"
                               name="phoneNumber"
                               value={updatedProfile.phoneNumber}
                               onChange={handleChange}
-                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                              className="edit-input"
                               required
                             />
                           ) : (
-                            <p className="font-medium">{profile.phoneNumber}</p>
+                            <p className="info-value">{profile.phoneNumber}</p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-start">
-                        <Calendar className="text-gray-400 mt-1" size={18} />
-                        <div className="ml-3">
-                          <p className="text-sm text-gray-500">Date of Birth</p>
+                      <div className="info-item">
+                        <Calendar className="icon" size={18} />
+                        <div>
+                          <p className="info-label">Fecha de Nacimiento</p>
                           {isEditing ? (
                             <input
                               type="date"
                               name="birthdate"
-                              value={updatedProfile.birthdate}
+                              value={
+                                updatedProfile.birthdate
+                                  ? updatedProfile.birthdate.substring(0, 10)
+                                  : ""
+                              }
                               onChange={handleChange}
-                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                              className="edit-input"
                               required
                             />
                           ) : (
-                            <p className="font-medium">
-                              {new Date(profile.birthdate).toLocaleDateString()}
+                            <p className="info-value">
+                              {profile.birthdate
+                                ? new Date(
+                                    profile.birthdate
+                                  ).toLocaleDateString()
+                                : "No especificado"}
                             </p>
                           )}
                         </div>
@@ -303,85 +617,86 @@ const DriverProfile = () => {
                     </div>
                   </div>
 
-                  {/* Driver Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Driver Information
-                    </h3>
-
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex items-start mb-3">
-                        <Truck className="text-gray-400 mt-1" size={18} />
-                        <div className="ml-3">
-                          <p className="text-sm text-gray-500">Vehicle Type</p>
+                  <div className="profile-section">
+                    <h3>Información del Conductor</h3>
+                    <div className="info-card">
+                      <div className="info-item">
+                        <Truck className="icon" size={18} />
+                        <div>
+                          <p className="info-label">Tipo de Vehículo</p>
                           {isEditing ? (
-                            <input
-                              type="text"
+                            <select
                               name="vehicleType"
                               value={updatedProfile.vehicleType}
                               onChange={handleChange}
-                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                              className="edit-input"
                               required
-                            />
+                            >
+                              <option value="bicicleta">Bicicleta</option>
+                              <option value="moto">Moto</option>
+                              <option value="coche">Coche</option>
+                            </select>
                           ) : (
-                            <p className="font-medium">{profile.vehicleType}</p>
+                            <p className="info-value">{profile.vehicleType}</p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-start mb-3">
-                        <MapPin className="text-gray-400 mt-1" size={18} />
-                        <div className="ml-3">
-                          <p className="text-sm text-gray-500">Work City</p>
+                      <div className="info-item">
+                        <MapPin className="icon" size={18} />
+                        <div>
+                          <p className="info-label">Ciudad de Trabajo</p>
                           {isEditing ? (
                             <input
                               type="text"
                               name="workCity"
                               value={updatedProfile.workCity}
                               onChange={handleChange}
-                              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                              className="edit-input"
                               required
                             />
                           ) : (
-                            <p className="font-medium">{profile.workCity}</p>
+                            <p className="info-value">{profile.workCity}</p>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-start">
-                        <Clock className="text-gray-400 mt-1" size={18} />
-                        <div className="ml-3">
-                          <p className="text-sm text-gray-500">Member Since</p>
-                          <p className="font-medium">
-                            {new Date(profile.createdAt).toLocaleDateString()}
+                      <div className="info-item">
+                        <Clock className="icon" size={18} />
+                        <div>
+                          <p className="info-label">Miembro desde</p>
+                          <p className="info-value">
+                            {profile.createdAt
+                              ? new Date(profile.createdAt).toLocaleDateString()
+                              : "No disponible"}
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex space-x-2 mt-4">
+                    <div className="profile-actions">
                       {isEditing ? (
                         <>
                           <button
                             onClick={handleCancelEdit}
-                            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded"
+                            className="button secondary"
                           >
-                            Cancel
+                            Cancelar
                           </button>
                           <button
                             onClick={handleSaveProfile}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+                            className="button primary"
                           >
-                            Save Changes
+                            Guardar Cambios
                           </button>
                         </>
                       ) : (
                         <button
                           onClick={handleEditProfile}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded flex items-center justify-center"
+                          className="button primary"
                         >
-                          <Edit className="mr-2" size={16} />
-                          Edit Profile
+                          <Edit className="icon" size={16} />
+                          Editar Perfil
                         </button>
                       )}
                     </div>
@@ -390,106 +705,106 @@ const DriverProfile = () => {
               )}
 
               {activeTab === "orders" && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Your Orders
-                    </h3>
-                    <div className="flex space-x-2">
-                      <button
-                        className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
-                        onClick={() => navigate("/available-orders")}
-                      >
-                        Find Available Orders
-                      </button>
-                    </div>
+                <div className="orders-tab">
+                  <div className="tab-header">
+                    <h3>Tus Órdenes</h3>
+                    <button
+                      className="button primary"
+                      onClick={() => navigate("/available-orders")}
+                    >
+                      Buscar Órdenes Disponibles
+                    </button>
                   </div>
 
                   {orders.length === 0 ? (
-                    <div className="bg-gray-50 rounded-lg p-8 text-center">
-                      <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
-                        <Package className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <h3 className="mt-2 text-sm font-medium text-gray-900">
-                        No orders yet
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Start accepting orders to see them here.
-                      </p>
+                    <div className="empty-state">
+                      <Package className="icon" size={48} />
+                      <h3>No hay órdenes aún</h3>
+                      <p>Comienza aceptando órdenes para verlas aquí.</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <div className="orders-table-container">
+                      <table className="orders-table">
+                        <thead>
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Order ID
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Pickup
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Dropoff
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Date
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Status
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Action
-                            </th>
+                            <th>ID de Orden</th>
+                            <th>Recogida</th>
+                            <th>Entrega</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
                           </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody>
                           {orders.map((order) => (
                             <tr key={order._id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                              <td className="order-id">
                                 #{order._id.substring(order._id.length - 6)}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {order.pickupLocation}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {order.dropoffLocation}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <td>{order.pickupLocation}</td>
+                              <td>{order.dropoffLocation}</td>
+                              <td>
                                 {new Date(order.createdAt).toLocaleDateString()}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                {getStatusBadge(order.status)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {order.status === "accepted" && (
+                              <td>{getStatusBadge(order.status)}</td>
+                              <td className="order-actions">
+                                {order.status === "pending" && (
                                   <button
-                                    className="text-blue-600 hover:text-blue-800"
-                                    onClick={() =>
-                                      navigate(`/orders/${order._id}`)
-                                    }
+                                    onClick={() => handleAcceptOrder(order._id)}
+                                    className="button small primary"
                                   >
-                                    Start Delivery
+                                    Aceptar
                                   </button>
                                 )}
+                                {order.status === "accepted" && (
+                                  <>
+                                    <button
+                                      onClick={() =>
+                                        handleStartDelivery(order._id)
+                                      }
+                                      className="button small primary"
+                                    >
+                                      Iniciar Entrega
+                                    </button>
+                                    <button
+                                      onClick={() => handleOpenChat(order)}
+                                      className="button small secondary"
+                                    >
+                                      <MessageCircle size={14} />
+                                      Chat
+                                    </button>
+                                  </>
+                                )}
                                 {order.status === "in-progress" && (
-                                  <button
-                                    className="text-green-600 hover:text-green-800"
-                                    onClick={() =>
-                                      navigate(`/orders/${order._id}`)
-                                    }
-                                  >
-                                    Complete Delivery
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() =>
+                                        navigate(
+                                          `/orders/${order._id}/complete`
+                                        )
+                                      }
+                                      className="button small success"
+                                    >
+                                      Completar
+                                    </button>
+                                    <button
+                                      onClick={() => handleOpenChat(order)}
+                                      className="button small secondary"
+                                    >
+                                      <MessageCircle size={14} />
+                                      Chat
+                                    </button>
+                                  </>
                                 )}
                                 {(order.status === "completed" ||
                                   order.status === "cancelled") && (
                                   <button
-                                    className="text-gray-600 hover:text-gray-800"
                                     onClick={() =>
                                       navigate(`/orders/${order._id}`)
                                     }
+                                    className="button small secondary"
                                   >
-                                    View Details
+                                    Ver Detalles
                                   </button>
                                 )}
                               </td>
@@ -501,10 +816,121 @@ const DriverProfile = () => {
                   )}
                 </div>
               )}
+
+              {activeTab === "notifications" && (
+                <div className="notifications-tab">
+                  <h3>Notificaciones</h3>
+
+                  <div className="notifications-container">
+                    {notifications.length === 0 ? (
+                      <div className="empty-state">
+                        <Bell className="icon" size={48} />
+                        <h3>No hay notificaciones</h3>
+                        <p>¡Estás al día!</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification, index) => (
+                        <div
+                          key={index}
+                          className={`notification-card ${
+                            notification.isRead ? "" : "unread"
+                          }`}
+                        >
+                          <div className="notification-content">
+                            <p className="notification-message">
+                              {notification.message}
+                            </p>
+                            <p className="notification-time">
+                              {new Date(
+                                notification.createdAt
+                              ).toLocaleString()}
+                            </p>
+                          </div>
+                          {notification.type === "new-order" && (
+                            <button
+                              onClick={() => handleAcceptOrder(notification.id)}
+                              className="button small success"
+                            >
+                              Aceptar
+                            </button>
+                          )}
+                          {notification.type === "new-message" && (
+                            <button
+                              onClick={() => {
+                                // Find the order and open chat
+                                const order = orders.find(
+                                  (o) => o._id === notification.id
+                                );
+                                if (order) handleOpenChat(order);
+                              }}
+                              className="button small primary"
+                            >
+                              <MessageCircle size={14} className="icon" />
+                              Responder
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Chat Modal */}
+        {activeChatOrder && (
+          <div className="chat-modal">
+            <div className="chat-header">
+              <h3>
+                Chat - Orden #
+                {activeChatOrder._id.substring(activeChatOrder._id.length - 6)}
+              </h3>
+              <button className="close-button" onClick={handleCloseChat}>
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <div className="chat-messages">
+              {chatMessages.length === 0 ? (
+                <p className="empty-chat">
+                  No hay mensajes aún. ¡Inicia la conversación!
+                </p>
+              ) : (
+                chatMessages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`chat-message ${
+                      msg.senderId === profile._id ? "sent" : "received"
+                    }`}
+                  >
+                    <div className="message-bubble">{msg.text}</div>
+                    <div className="message-time">
+                      {new Date(msg.timestamp).toLocaleTimeString()}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="chat-input">
+              <input
+                type="text"
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                placeholder="Escribe un mensaje..."
+              />
+              <button onClick={handleSendMessage} className="send-button">
+                Enviar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Footer />
     </div>
   );
 };

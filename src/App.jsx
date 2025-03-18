@@ -26,13 +26,30 @@ function App() {
           <Route path="/login" element={<LogIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/userprofile" element={<UserProfile />} />
-          <Route path="/Driverprofile" element={<DriverProfile />} />
-          <Route path="/Companyprofile" element={<CompanyProfile />} />
-          <Route path="/OrderForm" element={<OrderForm />} /> {/* Nueva ruta */}
-          <Route path="/DriverPage" element={<DriverPage />} />
-          <Route path="/UserOrders" element={<UserOrders />} />
-          <Route path="/Chat2" element={<Chat2 />} />
-          <Route path="/Precios" element={<Precios />} />
+          <Route path="/driverprofile" element={<DriverProfile />} />{" "}
+          {/* Cambiado a minúsculas para consistencia */}
+          <Route path="/companyprofile" element={<CompanyProfile />} />{" "}
+          {/* Cambiado a minúsculas para consistencia */}
+          <Route path="/orderform" element={<OrderForm />} />{" "}
+          {/* Cambiado a minúsculas para consistencia */}
+          <Route path="/driverpage" element={<DriverPage />} />{" "}
+          {/* Cambiado a minúsculas para consistencia */}
+          <Route path="/userorders" element={<UserOrders />} />{" "}
+          {/* Cambiado a minúsculas para consistencia */}
+          <Route path="/chat2" element={<Chat2 />} />{" "}
+          {/* Cambiado a minúsculas para consistencia */}
+          <Route path="/precios" element={<Precios />} />{" "}
+          {/* Cambiado a minúsculas para consistencia */}
+          {/* Rutas adicionales para la funcionalidad de órdenes de drivers */}
+          <Route path="/available-orders" element={<DriverProfile />} />{" "}
+          {/* Temporalmente usa DriverProfile */}
+          <Route path="/orders/:orderId" element={<DriverProfile />} />{" "}
+          {/* Temporalmente usa DriverProfile */}
+          <Route
+            path="/orders/:orderId/complete"
+            element={<DriverProfile />}
+          />{" "}
+          {/* Temporalmente usa DriverProfile */}
         </Routes>
       </BrowserRouter>
     </AuthProvider>
