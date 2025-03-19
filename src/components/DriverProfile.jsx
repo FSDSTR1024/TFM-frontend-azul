@@ -31,7 +31,7 @@ const DriverProfile = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("orders"); // Cambiado a "orders" para mostrar órdenes primero
   const [isEditing, setIsEditing] = useState(false);
   const [updatedProfile, setUpdatedProfile] = useState({});
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
@@ -44,52 +44,69 @@ const DriverProfile = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [orderToComplete, setOrderToComplete] = useState(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completedOrders, setCompletedOrders] = useState([]);
+  const [availableOrders, setAvailableOrders] = useState([]);
   const fileInputRef = useRef(null);
   const socketRef = useRef(null);
+  const chatMessagesRef = useRef(null);
   const navigate = useNavigate();
 
-  // Connect to Socket.io server
+  // Conectar al socket
   useEffect(() => {
-    // Initialize socket
+    // Inicializar socket
     socketRef.current = io("http://localhost:5000", {
       withCredentials: true,
     });
 
-    // Get driver ID from auth token once it's loaded
+    // Obtener ID del conductor del token
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
       return;
     }
 
-    // Listen for new orders
+    // Escuchar nuevas órdenes
     socketRef.current.on("newOrder", (order) => {
-      // Add to notifications
-      const newNotification = {
-        id: order._id,
-        message: `Nueva orden disponible: ${order.pickupLocation} a ${order.dropoffLocation}`,
-        createdAt: new Date(),
-        isRead: false,
-        type: "new-order",
-      };
+      // Añadir a órdenes disponibles solo si coincide con el tipo de vehículo del conductor
+      if (profile && profile.vehicleType === order.vehicleType) {
+        setAvailableOrders((prev) => [order, ...prev]);
 
-      setNotifications((prev) => [newNotification, ...prev]);
-      setHasNewNotifications(true);
+        // Añadir notificación
+        const newNotification = {
+          id: order._id,
+          message: `Nueva orden disponible: ${order.pickupLocation} a ${order.dropoffLocation}`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "new-order",
+        };
+
+        setNotifications((prev) => [newNotification, ...prev]);
+        setHasNewNotifications(true);
+      }
     });
 
-    // Listen for order status changes
+    // Escuchar cambios de estado de órdenes
     socketRef.current.on("orderUpdated", (data) => {
-      // Update orders list if the updated order belongs to this driver
+      // Actualizar listas de órdenes
       fetchDriverOrders();
+      fetchAvailableOrders();
     });
 
-    // Listen for new chat messages
+    // Escuchar nuevos mensajes de chat
     socketRef.current.on("newMessage", (data) => {
-      // If this message is for a chat we're currently in
+      // Si este mensaje es para un chat que estamos viendo actualmente
       if (activeChatOrder && activeChatOrder._id === data.orderId) {
         setChatMessages((prev) => [...prev, data.message]);
+
+        // Desplazar al final del chat
+        setTimeout(() => {
+          if (chatMessagesRef.current) {
+            chatMessagesRef.current.scrollTop =
+              chatMessagesRef.current.scrollHeight;
+          }
+        }, 100);
       } else {
-        // Add notification about new message
+        // Añadir notificación sobre nuevo mensaje
         const newNotification = {
           id: data.orderId,
           message: `Nuevo mensaje en la Orden #${data.orderId.substring(
@@ -98,6 +115,7 @@ const DriverProfile = () => {
           createdAt: new Date(),
           isRead: false,
           type: "new-message",
+          orderId: data.orderId,
         };
 
         setNotifications((prev) => [newNotification, ...prev]);
@@ -106,12 +124,19 @@ const DriverProfile = () => {
     });
 
     return () => {
-      // Disconnect socket when component unmounts
+      // Desconectar socket cuando se desmonta el componente
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
-  }, [navigate, activeChatOrder]);
+  }, [navigate, activeChatOrder, profile]);
+
+  // Desplazar al final del chat cuando cambian los mensajes
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
 
   useEffect(() => {
     const fetchDriverData = async () => {
@@ -122,7 +147,7 @@ const DriverProfile = () => {
           return;
         }
 
-        // Fetch driver profile using token
+        // Obtener perfil del conductor
         const profileResponse = await fetch(
           "http://localhost:5000/api/profile",
           {
@@ -142,10 +167,13 @@ const DriverProfile = () => {
         setProfile(profileData);
         setUpdatedProfile(profileData);
 
-        // Fetch driver orders
+        // Obtener órdenes del conductor
         await fetchDriverOrders();
 
-        // Fetch driver notifications
+        // Obtener órdenes disponibles
+        await fetchAvailableOrders();
+
+        // Obtener notificaciones
         await fetchNotifications();
 
         setLoading(false);
@@ -163,9 +191,9 @@ const DriverProfile = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // For testing, we'll use available orders since we don't have a specific driver orders endpoint yet
+      // Obtener órdenes activas del conductor
       const ordersResponse = await fetch(
-        "http://localhost:5000/api/orders/available",
+        "http://localhost:5000/api/orders/driver",
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -176,27 +204,55 @@ const DriverProfile = () => {
       }
 
       const ordersData = await ordersResponse.json();
-      setOrders(ordersData);
+
+      // Separar órdenes completadas de las activas
+      const activeOrders = ordersData.filter(
+        (order) => order.status !== "completed" && order.status !== "cancelled"
+      );
+
+      const completed = ordersData.filter(
+        (order) => order.status === "completed" || order.status === "cancelled"
+      );
+
+      setOrders(activeOrders);
+      setCompletedOrders(completed);
     } catch (err) {
-      console.error("Error fetching orders:", err);
+      console.error("Error obteniendo órdenes:", err);
+    }
+  };
+
+  const fetchAvailableOrders = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Obtener órdenes disponibles
+      const availableResponse = await fetch(
+        "http://localhost:5000/api/orders/available",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!availableResponse.ok) {
+        throw new Error("Error al cargar órdenes disponibles");
+      }
+
+      const availableData = await availableResponse.json();
+      setAvailableOrders(availableData);
+    } catch (err) {
+      console.error("Error obteniendo órdenes disponibles:", err);
     }
   };
 
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/notifications", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
 
-      if (!response.ok) {
-        throw new Error("Error al cargar notificaciones");
-      }
-
-      const notificationsData = await response.json();
-      setNotifications(notificationsData);
+      // Esta función en el futuro debería obtener las notificaciones del perfil del conductor
+      // Por ahora, solo verificamos si hay notificaciones no leídas
+      setHasNewNotifications(notifications.some((n) => !n.isRead));
     } catch (err) {
-      console.error("Error fetching notifications:", err);
+      console.error("Error obteniendo notificaciones:", err);
     }
   };
 
@@ -246,7 +302,7 @@ const DriverProfile = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // API call to accept the order
+      // Petición API para aceptar la orden
       const response = await fetch(
         `http://localhost:5000/api/orders/${orderId}/accept`,
         {
@@ -262,13 +318,19 @@ const DriverProfile = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Join the chat room for this order
+        // Unirse a la sala de chat para esta orden
         socketRef.current.emit("joinChatRoom", orderId);
 
-        // Update orders list
+        // Actualizar listas de órdenes
         fetchDriverOrders();
+        fetchAvailableOrders();
 
-        // Add notification
+        // Eliminar esta orden de las disponibles
+        setAvailableOrders((prev) =>
+          prev.filter((order) => order._id !== orderId)
+        );
+
+        // Añadir notificación
         const newNotification = {
           id: orderId,
           message: `Has aceptado la Orden #${orderId.substring(
@@ -280,9 +342,10 @@ const DriverProfile = () => {
         };
 
         setNotifications((prev) => [newNotification, ...prev]);
+        setHasNewNotifications(true);
       }
     } catch (err) {
-      console.error("Error accepting order:", err);
+      console.error("Error aceptando orden:", err);
     }
   };
 
@@ -290,7 +353,7 @@ const DriverProfile = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // API call to start the delivery
+      // Petición API para iniciar la entrega
       const response = await fetch(
         `http://localhost:5000/api/orders/${orderId}/start`,
         {
@@ -306,15 +369,29 @@ const DriverProfile = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Update orders list
+        // Actualizar listas de órdenes
         fetchDriverOrders();
+
+        // Añadir notificación
+        const newNotification = {
+          id: orderId,
+          message: `Has iniciado la entrega de la Orden #${orderId.substring(
+            orderId.length - 6
+          )}`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "order-started",
+        };
+
+        setNotifications((prev) => [newNotification, ...prev]);
+        setHasNewNotifications(true);
       }
     } catch (err) {
-      console.error("Error starting delivery:", err);
+      console.error("Error iniciando entrega:", err);
     }
   };
 
-  // Nueva función para manejar la subida de imágenes
+  // Función para manejar la subida de imágenes
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -324,7 +401,7 @@ const DriverProfile = () => {
     }
   };
 
-  // Nueva función para abrir el modal de completar orden
+  // Función para abrir el modal de completar orden
   const handleCompleteOrderClick = (order) => {
     setOrderToComplete(order);
     setShowCompletionModal(true);
@@ -332,7 +409,7 @@ const DriverProfile = () => {
     setImagePreview(null);
   };
 
-  // Nueva función para cancelar la subida de imagen
+  // Función para cancelar la subida de imagen
   const handleCancelUpload = () => {
     setOrderToComplete(null);
     setShowCompletionModal(false);
@@ -340,7 +417,7 @@ const DriverProfile = () => {
     setImagePreview(null);
   };
 
-  // Nueva función para completar la orden con prueba de entrega
+  // Función para completar la orden con prueba de entrega
   const handleCompleteOrder = async () => {
     if (!selectedImage || !orderToComplete) return;
 
@@ -394,7 +471,7 @@ const DriverProfile = () => {
           proofImageUrl: imageUrl,
         });
 
-        // Actualizar lista de órdenes
+        // Actualizar listas de órdenes
         fetchDriverOrders();
 
         // Añadir notificación
@@ -409,6 +486,7 @@ const DriverProfile = () => {
         };
 
         setNotifications((prev) => [newNotification, ...prev]);
+        setHasNewNotifications(true);
 
         // Cerrar modal
         setShowCompletionModal(false);
@@ -417,7 +495,7 @@ const DriverProfile = () => {
         setImagePreview(null);
       }
     } catch (err) {
-      console.error("Error completing order:", err);
+      console.error("Error completando orden:", err);
     } finally {
       setUploadingImage(false);
     }
@@ -427,10 +505,10 @@ const DriverProfile = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // Join chat room
+      // Unirse a sala de chat
       socketRef.current.emit("joinChatRoom", order._id);
 
-      // Fetch chat messages
+      // Obtener mensajes del chat
       const response = await fetch(
         `http://localhost:5000/api/chat/${order._id}/messages`,
         {
@@ -438,11 +516,15 @@ const DriverProfile = () => {
         }
       );
 
+      if (!response.ok) {
+        throw new Error("Error obteniendo mensajes");
+      }
+
       const data = await response.json();
       setChatMessages(data.messages || []);
       setActiveChatOrder(order);
 
-      // Mark related notifications as read
+      // Marcar notificaciones relacionadas como leídas
       setNotifications((prev) =>
         prev.map((notif) =>
           notif.id === order._id && notif.type === "new-message"
@@ -451,7 +533,7 @@ const DriverProfile = () => {
         )
       );
     } catch (err) {
-      console.error("Error opening chat:", err);
+      console.error("Error abriendo chat:", err);
     }
   };
 
@@ -467,7 +549,21 @@ const DriverProfile = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // API call to send message
+      // Añadir mensaje inmediatamente a la interfaz para mejor UX
+      const tempMessage = {
+        senderId: profile._id,
+        text: messageInput,
+        timestamp: new Date().toISOString(),
+        _id: Date.now().toString(), // ID temporal para renderizado
+      };
+
+      setChatMessages((prev) => [...prev, tempMessage]);
+
+      // Limpiar input
+      const messageToSend = messageInput;
+      setMessageInput("");
+
+      // Enviar mensaje al servidor
       const response = await fetch(
         `http://localhost:5000/api/chat/${activeChatOrder._id}/message`,
         {
@@ -476,18 +572,17 @@ const DriverProfile = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ text: messageInput }),
+          body: JSON.stringify({ text: messageToSend }),
         }
       );
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Message will be added to chat via socket event
-        setMessageInput("");
+      if (!response.ok) {
+        throw new Error("Error enviando mensaje");
       }
+
+      // El mensaje real se añadirá a través del evento de socket
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.error("Error enviando mensaje:", err);
     }
   };
 
@@ -505,24 +600,48 @@ const DriverProfile = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("es-ES", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+
+  const getStatusText = (status) => {
     switch (status) {
       case "pending":
-        return <span className="status-badge status-pending">Pendiente</span>;
+        return "Pendiente";
       case "accepted":
-        return <span className="status-badge status-accepted">Aceptado</span>;
+        return "Aceptada";
       case "in-progress":
-        return (
-          <span className="status-badge status-in-progress">En Progreso</span>
-        );
+        return "En Progreso";
       case "completed":
-        return (
-          <span className="status-badge status-completed">Completado</span>
-        );
+        return "Completada";
       case "cancelled":
-        return <span className="status-badge status-cancelled">Cancelado</span>;
+        return "Cancelada";
       default:
-        return <span className="status-badge">{status}</span>;
+        return status;
+    }
+  };
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case "pending":
+        return "status-pending";
+      case "accepted":
+        return "status-accepted";
+      case "in-progress":
+        return "status-progress";
+      case "completed":
+        return "status-completed";
+      case "cancelled":
+        return "status-cancelled";
+      default:
+        return "";
     }
   };
 
@@ -549,7 +668,7 @@ const DriverProfile = () => {
       <div className="driver-profile-main">
         {profile && (
           <div className="profile-content">
-            {/* Profile Header */}
+            {/* Cabecera del perfil */}
             <div className="profile-header">
               <div className="profile-header-content">
                 <div className="profile-avatar">
@@ -582,7 +701,7 @@ const DriverProfile = () => {
                       )}
                     </button>
 
-                    {/* Notifications Dropdown */}
+                    {/* Dropdown de Notificaciones */}
                     {showNotifications && (
                       <div className="notifications-dropdown">
                         <div className="notifications-header">
@@ -617,6 +736,25 @@ const DriverProfile = () => {
                                     Aceptar
                                   </button>
                                 )}
+                                {notif.type === "new-message" && (
+                                  <button
+                                    onClick={() => {
+                                      // Buscar la orden y abrir chat
+                                      const order = [
+                                        ...orders,
+                                        ...completedOrders,
+                                      ].find(
+                                        (o) =>
+                                          o._id === notif.id ||
+                                          o._id === notif.orderId
+                                      );
+                                      if (order) handleOpenChat(order);
+                                    }}
+                                    className="accept-button"
+                                  >
+                                    Responder
+                                  </button>
+                                )}
                               </div>
                             ))
                           ) : (
@@ -632,19 +770,34 @@ const DriverProfile = () => {
               </div>
             </div>
 
-            {/* Tab Navigation */}
+            {/* Tabs de navegación */}
             <div className="profile-tabs">
-              <button
-                onClick={() => setActiveTab("profile")}
-                className={activeTab === "profile" ? "active" : ""}
-              >
-                Información Personal
-              </button>
               <button
                 onClick={() => setActiveTab("orders")}
                 className={activeTab === "orders" ? "active" : ""}
               >
                 Mis Órdenes
+              </button>
+              <button
+                onClick={() => setActiveTab("available")}
+                className={activeTab === "available" ? "active" : ""}
+              >
+                Órdenes Disponibles
+                {availableOrders.length > 0 && (
+                  <span className="badge">{availableOrders.length}</span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("completed")}
+                className={activeTab === "completed" ? "active" : ""}
+              >
+                Historial
+              </button>
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={activeTab === "profile" ? "active" : ""}
+              >
+                Mi Perfil
               </button>
               <button
                 onClick={() => setActiveTab("notifications")}
@@ -659,8 +812,9 @@ const DriverProfile = () => {
               </button>
             </div>
 
-            {/* Tab Content */}
+            {/* Contenido de los tabs */}
             <div className="tab-content">
+              {/* Tab de perfil */}
               {activeTab === "profile" && (
                 <div className="profile-details">
                   <div className="profile-section">
@@ -822,118 +976,291 @@ const DriverProfile = () => {
                 </div>
               )}
 
+              {/* Tab de órdenes activas */}
               {activeTab === "orders" && (
-                <div className="orders-tab">
-                  <div className="tab-header">
-                    <h3>Tus Órdenes</h3>
-                    <button
-                      className="button primary"
-                      onClick={() => navigate("/available-orders")}
-                    >
-                      Buscar Órdenes Disponibles
-                    </button>
-                  </div>
+                <div className="orders-list">
+                  <h2>Mis Órdenes Activas</h2>
 
                   {orders.length === 0 ? (
-                    <div className="empty-state">
-                      <Package className="icon" size={48} />
-                      <h3>No hay órdenes aún</h3>
-                      <p>Comienza aceptando órdenes para verlas aquí.</p>
+                    <div className="no-orders">
+                      <p>No tienes órdenes activas.</p>
+                      <p>
+                        Consulta las órdenes disponibles para empezar a
+                        entregar.
+                      </p>
                     </div>
                   ) : (
-                    <div className="orders-table-container">
-                      <table className="orders-table">
-                        <thead>
-                          <tr>
-                            <th>ID de Orden</th>
-                            <th>Recogida</th>
-                            <th>Entrega</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {orders.map((order) => (
-                            <tr key={order._id}>
-                              <td className="order-id">
-                                #{order._id.substring(order._id.length - 6)}
-                              </td>
-                              <td>{order.pickupLocation}</td>
-                              <td>{order.dropoffLocation}</td>
-                              <td>
-                                {new Date(order.createdAt).toLocaleDateString()}
-                              </td>
-                              <td>{getStatusBadge(order.status)}</td>
-                              <td className="order-actions">
-                                {order.status === "pending" && (
-                                  <button
-                                    onClick={() => handleAcceptOrder(order._id)}
-                                    className="button small primary"
-                                  >
-                                    Aceptar
-                                  </button>
-                                )}
-                                {order.status === "accepted" && (
-                                  <>
-                                    <button
-                                      onClick={() =>
-                                        handleStartDelivery(order._id)
-                                      }
-                                      className="button small primary"
-                                    >
-                                      Iniciar Entrega
-                                    </button>
-                                    <button
-                                      onClick={() => handleOpenChat(order)}
-                                      className="button small secondary"
-                                    >
-                                      <MessageCircle size={14} />
-                                      Chat
-                                    </button>
-                                  </>
-                                )}
-                                {order.status === "in-progress" && (
-                                  <>
-                                    <button
-                                      onClick={() =>
-                                        handleCompleteOrderClick(order)
-                                      }
-                                      className="button small success"
-                                    >
-                                      <CheckCircle size={14} className="icon" />
-                                      Completar
-                                    </button>
-                                    <button
-                                      onClick={() => handleOpenChat(order)}
-                                      className="button small secondary"
-                                    >
-                                      <MessageCircle size={14} />
-                                      Chat
-                                    </button>
-                                  </>
-                                )}
-                                {(order.status === "completed" ||
-                                  order.status === "cancelled") && (
-                                  <button
-                                    onClick={() =>
-                                      navigate(`/orders/${order._id}`)
-                                    }
-                                    className="button small secondary"
-                                  >
-                                    Ver Detalles
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="orders-grid">
+                      {orders.map((order) => (
+                        <div key={order._id} className="order-card">
+                          <div className="order-header">
+                            <div className="order-id">
+                              Pedido #{order._id.substring(0, 8)}...
+                            </div>
+                            <div
+                              className={`order-status ${getStatusClass(
+                                order.status
+                              )}`}
+                            >
+                              {getStatusText(order.status)}
+                            </div>
+                          </div>
+
+                          <div className="order-details">
+                            <div className="order-locations">
+                              <div className="pickup">
+                                <strong>Recogida:</strong>{" "}
+                                {order.pickupLocation}
+                              </div>
+                              <div className="dropoff">
+                                <strong>Entrega:</strong>{" "}
+                                {order.dropoffLocation}
+                              </div>
+                            </div>
+
+                            <div className="order-info-row">
+                              <div className="order-info-item">
+                                <strong>Fecha de Creación:</strong>
+                                <div>{formatDate(order.createdAt)}</div>
+                              </div>
+                              <div className="order-info-item">
+                                <strong>Precio:</strong>
+                                <div className="price">
+                                  {order.price.toFixed(2)}€
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="order-info-row">
+                              <div className="order-info-item">
+                                <strong>Vehículo:</strong>
+                                <div>
+                                  {order.vehicleType.charAt(0).toUpperCase() +
+                                    order.vehicleType.slice(1)}
+                                </div>
+                              </div>
+                              <div className="order-info-item">
+                                <strong>Tamaño del Paquete:</strong>
+                                <div>
+                                  {order.packageSize.charAt(0).toUpperCase() +
+                                    order.packageSize.slice(1)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="order-actions">
+                            {order.status === "accepted" && (
+                              <>
+                                <button
+                                  className="chat-button"
+                                  onClick={() => handleOpenChat(order)}
+                                >
+                                  <MessageCircle size={16} className="icon" />
+                                  Chat con Cliente
+                                </button>
+                                <button
+                                  className="start-button"
+                                  onClick={() => handleStartDelivery(order._id)}
+                                >
+                                  <Truck size={16} className="icon" />
+                                  Iniciar Entrega
+                                </button>
+                              </>
+                            )}
+
+                            {order.status === "in-progress" && (
+                              <>
+                                <button
+                                  className="chat-button"
+                                  onClick={() => handleOpenChat(order)}
+                                >
+                                  <MessageCircle size={16} className="icon" />
+                                  Chat con Cliente
+                                </button>
+                                <button
+                                  className="complete-button"
+                                  onClick={() =>
+                                    handleCompleteOrderClick(order)
+                                  }
+                                >
+                                  <CheckCircle size={16} className="icon" />
+                                  Completar
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               )}
 
+              {/* Tab de órdenes disponibles */}
+              {activeTab === "available" && (
+                <div className="orders-list">
+                  <h2>Órdenes Disponibles</h2>
+
+                  {availableOrders.length === 0 ? (
+                    <div className="no-orders">
+                      <p>No hay órdenes disponibles en este momento.</p>
+                      <p>¡Vuelve a revisar más tarde!</p>
+                    </div>
+                  ) : (
+                    <div className="orders-grid">
+                      {availableOrders.map((order) => (
+                        <div key={order._id} className="order-card">
+                          <div className="order-header">
+                            <div className="order-id">
+                              Pedido #{order._id.substring(0, 8)}...
+                            </div>
+                            <div
+                              className={`order-status ${getStatusClass(
+                                order.status
+                              )}`}
+                            >
+                              {getStatusText(order.status)}
+                            </div>
+                          </div>
+
+                          <div className="order-details">
+                            <div className="order-locations">
+                              <div className="pickup">
+                                <strong>Recogida:</strong>{" "}
+                                {order.pickupLocation}
+                              </div>
+                              <div className="dropoff">
+                                <strong>Entrega:</strong>{" "}
+                                {order.dropoffLocation}
+                              </div>
+                            </div>
+
+                            <div className="order-info-row">
+                              <div className="order-info-item">
+                                <strong>Fecha de Creación:</strong>
+                                <div>{formatDate(order.createdAt)}</div>
+                              </div>
+                              <div className="order-info-item">
+                                <strong>Precio:</strong>
+                                <div className="price">
+                                  {order.price.toFixed(2)}€
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="order-info-row">
+                              <div className="order-info-item">
+                                <strong>Vehículo:</strong>
+                                <div>
+                                  {order.vehicleType.charAt(0).toUpperCase() +
+                                    order.vehicleType.slice(1)}
+                                </div>
+                              </div>
+                              <div className="order-info-item">
+                                <strong>Tamaño del Paquete:</strong>
+                                <div>
+                                  {order.packageSize.charAt(0).toUpperCase() +
+                                    order.packageSize.slice(1)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="order-actions">
+                            <button
+                              className="accept-button"
+                              onClick={() => handleAcceptOrder(order._id)}
+                            >
+                              <CheckCircle size={16} className="icon" />
+                              Aceptar Orden
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tab de órdenes completadas (historial) */}
+              {activeTab === "completed" && (
+                <div className="orders-list">
+                  <h2>Historial de Órdenes</h2>
+
+                  {completedOrders.length === 0 ? (
+                    <div className="no-orders">
+                      <p>Aún no has completado ninguna orden.</p>
+                    </div>
+                  ) : (
+                    <div className="orders-grid">
+                      {completedOrders.map((order) => (
+                        <div key={order._id} className="order-card">
+                          <div className="order-header">
+                            <div className="order-id">
+                              Pedido #{order._id.substring(0, 8)}...
+                            </div>
+                            <div
+                              className={`order-status ${getStatusClass(
+                                order.status
+                              )}`}
+                            >
+                              {getStatusText(order.status)}
+                            </div>
+                          </div>
+
+                          <div className="order-details">
+                            <div className="order-locations">
+                              <div className="pickup">
+                                <strong>Recogida:</strong>{" "}
+                                {order.pickupLocation}
+                              </div>
+                              <div className="dropoff">
+                                <strong>Entrega:</strong>{" "}
+                                {order.dropoffLocation}
+                              </div>
+                            </div>
+
+                            <div className="order-info-row">
+                              <div className="order-info-item">
+                                <strong>Completada:</strong>
+                                <div>
+                                  {order.completedAt
+                                    ? formatDate(order.completedAt)
+                                    : "N/A"}
+                                </div>
+                              </div>
+                              <div className="order-info-item">
+                                <strong>Precio:</strong>
+                                <div className="price">
+                                  {order.price.toFixed(2)}€
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {order.status === "completed" &&
+                            order.proofOfDelivery && (
+                              <div className="proof-section">
+                                <strong>Prueba de Entrega:</strong>
+                                <img
+                                  src={order.proofOfDelivery}
+                                  alt="Prueba de entrega"
+                                  className="proof-image"
+                                  onClick={() =>
+                                    window.open(order.proofOfDelivery, "_blank")
+                                  }
+                                />
+                              </div>
+                            )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tab de notificaciones */}
               {activeTab === "notifications" && (
                 <div className="notifications-tab">
                   <h3>Notificaciones</h3>
@@ -974,9 +1301,14 @@ const DriverProfile = () => {
                           {notification.type === "new-message" && (
                             <button
                               onClick={() => {
-                                // Find the order and open chat
-                                const order = orders.find(
-                                  (o) => o._id === notification.id
+                                // Buscar la orden y abrir chat
+                                const order = [
+                                  ...orders,
+                                  ...completedOrders,
+                                ].find(
+                                  (o) =>
+                                    o._id === notification.id ||
+                                    o._id === notification.orderId
                                 );
                                 if (order) handleOpenChat(order);
                               }}
@@ -996,7 +1328,7 @@ const DriverProfile = () => {
           </div>
         )}
 
-        {/* Chat Modal */}
+        {/* Modal de Chat */}
         {activeChatOrder && (
           <div className="chat-modal">
             <div className="chat-header">
@@ -1008,7 +1340,7 @@ const DriverProfile = () => {
                 <XCircle size={20} />
               </button>
             </div>
-            <div className="chat-messages">
+            <div className="chat-messages" ref={chatMessagesRef}>
               {chatMessages.length === 0 ? (
                 <p className="empty-chat">
                   No hay mensajes aún. ¡Inicia la conversación!
