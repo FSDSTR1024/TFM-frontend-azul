@@ -20,6 +20,8 @@ import {
   Edit,
   Bell,
   MessageCircle,
+  Camera,
+  Upload,
 } from "lucide-react";
 import "./DriverProfile.css";
 
@@ -37,6 +39,12 @@ const DriverProfile = () => {
   const [activeChatOrder, setActiveChatOrder] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [messageInput, setMessageInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [orderToComplete, setOrderToComplete] = useState(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const fileInputRef = useRef(null);
   const socketRef = useRef(null);
   const navigate = useNavigate();
 
@@ -303,6 +311,115 @@ const DriverProfile = () => {
       }
     } catch (err) {
       console.error("Error starting delivery:", err);
+    }
+  };
+
+  // Nueva función para manejar la subida de imágenes
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  // Nueva función para abrir el modal de completar orden
+  const handleCompleteOrderClick = (order) => {
+    setOrderToComplete(order);
+    setShowCompletionModal(true);
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
+  // Nueva función para cancelar la subida de imagen
+  const handleCancelUpload = () => {
+    setOrderToComplete(null);
+    setShowCompletionModal(false);
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
+  // Nueva función para completar la orden con prueba de entrega
+  const handleCompleteOrder = async () => {
+    if (!selectedImage || !orderToComplete) return;
+
+    try {
+      setUploadingImage(true);
+      const token = localStorage.getItem("token");
+
+      // Primero subimos la imagen
+      const formData = new FormData();
+      formData.append("image", selectedImage);
+
+      const uploadResponse = await fetch("http://localhost:5000/api/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Error al subir la imagen");
+      }
+
+      const uploadData = await uploadResponse.json();
+      const imageUrl = uploadData.imageUrl;
+
+      // Ahora completamos la orden con la URL de la imagen
+      const completeResponse = await fetch(
+        `http://localhost:5000/api/orders/${orderToComplete._id}/proof`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ imageUrl }),
+        }
+      );
+
+      if (!completeResponse.ok) {
+        throw new Error("Error al completar la orden");
+      }
+
+      const completeData = await completeResponse.json();
+
+      if (completeData.success) {
+        // Emitir evento socket
+        socketRef.current.emit("completeOrder", {
+          orderId: orderToComplete._id,
+          driverId: profile._id,
+          proofImageUrl: imageUrl,
+        });
+
+        // Actualizar lista de órdenes
+        fetchDriverOrders();
+
+        // Añadir notificación
+        const newNotification = {
+          id: orderToComplete._id,
+          message: `Has completado la Orden #${orderToComplete._id.substring(
+            orderToComplete._id.length - 6
+          )}`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "order-completed",
+        };
+
+        setNotifications((prev) => [newNotification, ...prev]);
+
+        // Cerrar modal
+        setShowCompletionModal(false);
+        setOrderToComplete(null);
+        setSelectedImage(null);
+        setImagePreview(null);
+      }
+    } catch (err) {
+      console.error("Error completing order:", err);
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -780,12 +897,11 @@ const DriverProfile = () => {
                                   <>
                                     <button
                                       onClick={() =>
-                                        navigate(
-                                          `/orders/${order._id}/complete`
-                                        )
+                                        handleCompleteOrderClick(order)
                                       }
                                       className="button small success"
                                     >
+                                      <CheckCircle size={14} className="icon" />
                                       Completar
                                     </button>
                                     <button
@@ -862,9 +978,6 @@ const DriverProfile = () => {
                                 const order = orders.find(
                                   (o) => o._id === notification.id
                                 );
-                                {chatMessages && setActiveChatOrder && (
-                                  <Chat2 order={setActiveChatOrder} onClose={handleCloseChat} />
-                                )}
                                 if (order) handleOpenChat(order);
                               }}
                               className="button small primary"
@@ -884,67 +997,128 @@ const DriverProfile = () => {
         )}
 
         {/* Chat Modal */}
-        {activeTab === "orders" && (
-          <div className="orders-tab">
-            {/* ... código existente ... */}
-
-            {orders.length === 0 ? (
-              <div className="empty-state">
-                {/* ... código existente ... */}
-              </div>
-            ) : (
-              <div className="orders-list">
-                {orders.map((order) => (
-                  <div key={order._id} className="order-item">
-                    <div className="order-details">
-                      {/* ... detalles de la orden ... */}
+        {activeChatOrder && (
+          <div className="chat-modal">
+            <div className="chat-header">
+              <h3>
+                Chat - Orden #
+                {activeChatOrder._id.substring(activeChatOrder._id.length - 6)}
+              </h3>
+              <button className="close-button" onClick={handleCloseChat}>
+                <XCircle size={20} />
+              </button>
+            </div>
+            <div className="chat-messages">
+              {chatMessages.length === 0 ? (
+                <p className="empty-chat">
+                  No hay mensajes aún. ¡Inicia la conversación!
+                </p>
+              ) : (
+                chatMessages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`chat-message ${
+                      msg.senderId === profile._id ? "sent" : "received"
+                    }`}
+                  >
+                    <div className="message-bubble">{msg.text}</div>
+                    <div className="message-time">
+                      {new Date(msg.timestamp).toLocaleTimeString()}
                     </div>
-
-                    {/* Botón para expandir el chat */}
-                    {(order.status === "accepted" ||
-                      order.status === "in-progress") && (
-                      <button
-                        onClick={() => {
-                          if (
-                            activeChatOrder &&
-                            activeChatOrder._id === order._id
-                          ) {
-                            handleCloseChat();
-                          } else {
-                            handleOpenChat(order);
-                          }
-                        }}
-                        className="button small primary"
-                      >
-                        <MessageCircle size={14} className="icon" />
-                        {activeChatOrder && activeChatOrder._id === order._id
-                          ? "Cerrar Chat"
-                          : "Abrir Chat"}
-                      </button>
-                    )}
-
-                    {/* Chat expandible */}
-                    {activeChatOrder && activeChatOrder._id === order._id && (
-                      <div className="inline-chat-container">
-                        <Chat2
-                          orderId={order._id}
-                          messages={chatMessages}
-                          onSendMessage={handleSendMessage}
-                          messageInput={messageInput}
-                          setMessageInput={setMessageInput}
-                          userId={profile._id}
-                        />
-                      </div>
-                    )}
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
+            <div className="chat-input">
+              <input
+                type="text"
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                placeholder="Escribe un mensaje..."
+              />
+              <button onClick={handleSendMessage} className="send-button">
+                Enviar
+              </button>
+            </div>
           </div>
         )}
 
-        <Footer />
+        {/* Modal para completar orden con foto */}
+        {showCompletionModal && (
+          <div className="completion-modal-overlay">
+            <div className="completion-modal">
+              <div className="completion-modal-header">
+                <h3>
+                  Completar Orden #
+                  {orderToComplete._id.substring(
+                    orderToComplete._id.length - 6
+                  )}
+                </h3>
+                <button className="close-button" onClick={handleCancelUpload}>
+                  <XCircle size={20} />
+                </button>
+              </div>
+              <div className="completion-modal-content">
+                <p>
+                  Sube una foto como prueba de entrega para completar la orden:
+                </p>
+
+                {imagePreview ? (
+                  <div className="image-preview-container">
+                    <img
+                      src={imagePreview}
+                      alt="Preview de la entrega"
+                      className="image-preview"
+                    />
+                    <button
+                      className="change-image-button"
+                      onClick={() => fileInputRef.current.click()}
+                    >
+                      Cambiar imagen
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className="image-upload-area"
+                    onClick={() => fileInputRef.current.click()}
+                  >
+                    <Camera size={48} className="upload-icon" />
+                    <p>Haz clic para seleccionar una imagen</p>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  accept="image/*"
+                  className="file-input"
+                  style={{ display: "none" }}
+                />
+
+                <div className="completion-modal-actions">
+                  <button
+                    className="button secondary"
+                    onClick={handleCancelUpload}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="button primary"
+                    onClick={handleCompleteOrder}
+                    disabled={!selectedImage || uploadingImage}
+                  >
+                    {uploadingImage ? "Subiendo..." : "Completar Entrega"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      <Footer />
     </div>
   );
 };
