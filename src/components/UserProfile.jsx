@@ -24,19 +24,41 @@ function UserProfile() {
   const [orders, setOrders] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(false);
   const socketRef = useRef(null);
+  const chatMessagesRef = useRef(null);
   const navigate = useNavigate();
 
-  // Initialize Socket.io connection
+  // Initialize Socket.io connection with improved error handling
   useEffect(() => {
     // Connect to socket server
     socketRef.current = io("http://localhost:5000", {
       withCredentials: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    // Track connection status
+    socketRef.current.on("connect", () => {
+      console.log("Socket connected successfully!");
+      setSocketConnected(true);
+    });
+
+    socketRef.current.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+      setSocketConnected(false);
+    });
+
+    socketRef.current.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
+      setSocketConnected(false);
     });
 
     if (user && user.id) {
       // Listen for changes to user's orders
       socketRef.current.on("orderUpdated", (data) => {
+        console.log("Order updated event received:", data);
         if (data.userId === user.id) {
           fetchOrders(); // Refresh orders list
 
@@ -71,6 +93,7 @@ function UserProfile() {
 
       // Listen for order cancellations
       socketRef.current.on("orderCancelled", (data) => {
+        console.log("Order cancelled event received:", data);
         if (data.userId === user.id) {
           fetchOrders(); // Refresh orders list
 
@@ -86,10 +109,19 @@ function UserProfile() {
         }
       });
 
-      // Listen for new chat messages
+      // Listen for new chat messages with improved logging
       socketRef.current.on("newMessage", (data) => {
+        console.log("New message event received:", data);
         if (chatOrder && chatOrder._id === data.orderId) {
           setChatMessages((prev) => [...prev, data.message]);
+
+          // Scroll to bottom when new message arrives
+          setTimeout(() => {
+            if (chatMessagesRef.current) {
+              chatMessagesRef.current.scrollTop =
+                chatMessagesRef.current.scrollHeight;
+            }
+          }, 100);
         } else {
           // Add notification about new message
           addNotification({
@@ -106,6 +138,7 @@ function UserProfile() {
 
       // Listen for chat closed event
       socketRef.current.on("chatClosed", (data) => {
+        console.log("Chat closed event received:", data);
         if (chatOrder && chatOrder._id === data.orderId) {
           addNotification({
             id: data.orderId,
@@ -132,6 +165,13 @@ function UserProfile() {
     };
   }, [user, chatOrder]);
 
+  // Auto-scroll to bottom of chat when messages change
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
   // Function to add a notification to the list
   const addNotification = (notification) => {
     setNotifications((prev) => [notification, ...prev]);
@@ -147,7 +187,10 @@ function UserProfile() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("User orders fetched:", data);
         setOrders(data);
+      } else {
+        console.error("Error fetching orders:", await response.text());
       }
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -165,6 +208,8 @@ function UserProfile() {
       if (response.ok) {
         const data = await response.json();
         setNotifications(data);
+      } else {
+        console.error("Error fetching notifications:", await response.text());
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -184,6 +229,16 @@ function UserProfile() {
         prev.map((notif) => ({ ...notif, isRead: true }))
       );
       setHasNewNotifications(false);
+
+      // API call to mark notifications as read
+      try {
+        fetch("http://localhost:5000/api/notifications/mark-read", {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+      } catch (error) {
+        console.error("Error marking notifications as read:", error);
+      }
     }
   }, [activeSection, hasNewNotifications]);
 
@@ -216,6 +271,7 @@ function UserProfile() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(data),
       });
@@ -231,8 +287,14 @@ function UserProfile() {
 
   const handleOpenChat = async (order) => {
     try {
-      // Join the chat room
-      socketRef.current.emit("joinChatRoom", order._id);
+      console.log("Opening chat for order:", order._id);
+
+      // Join the chat room with additional information
+      socketRef.current.emit("joinChatRoom", {
+        orderId: order._id,
+        userId: user.id,
+        userName: `${user.firstName} ${user.lastName}`,
+      });
 
       // Fetch chat messages
       const response = await fetch(
@@ -242,18 +304,38 @@ function UserProfile() {
         }
       );
 
-      const data = await response.json();
-      setChatMessages(data.messages || []);
-      setChatOrder(order);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Chat messages fetched:", data.messages);
+        setChatMessages(data.messages || []);
+        setChatOrder(order);
 
-      // Mark related notifications as read
-      setNotifications((prev) =>
-        prev.map((notif) =>
-          notif.id === order._id && notif.type === "new-message"
-            ? { ...notif, isRead: true }
-            : notif
-        )
-      );
+        // Mark related notifications as read
+        setNotifications((prev) =>
+          prev.map((notif) =>
+            notif.id === order._id && notif.type === "new-message"
+              ? { ...notif, isRead: true }
+              : notif
+          )
+        );
+
+        // Also mark read on server
+        try {
+          fetch(
+            `http://localhost:5000/api/notifications/mark-read/${order._id}`,
+            {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+        } catch (error) {
+          console.error("Error marking chat notifications as read:", error);
+        }
+      } else {
+        console.error("Error fetching chat messages:", await response.text());
+      }
     } catch (error) {
       console.error("Error opening chat:", error);
     }
@@ -271,6 +353,22 @@ function UserProfile() {
     if (!messageInput.trim() || !chatOrder) return;
 
     try {
+      // Create a temporary message object to show immediately
+      const tempMessage = {
+        text: messageInput,
+        senderId: user.id,
+        senderName: `${user.firstName} ${user.lastName}`,
+        timestamp: new Date().toISOString(),
+        _id: Date.now().toString(), // temporary ID
+      };
+
+      // Add message immediately to UI
+      setChatMessages((prev) => [...prev, tempMessage]);
+
+      // Clear input
+      const messageToSend = messageInput;
+      setMessageInput("");
+
       // API call to send message
       const response = await fetch(
         `http://localhost:5000/api/chat/${chatOrder._id}/message`,
@@ -280,13 +378,12 @@ function UserProfile() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({ text: messageInput }),
+          body: JSON.stringify({ text: messageToSend }),
         }
       );
 
-      if (response.ok) {
-        // Message will be added via socket event
-        setMessageInput("");
+      if (!response.ok) {
+        console.error("Error sending message:", await response.text());
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -306,7 +403,13 @@ function UserProfile() {
       );
 
       if (response.ok) {
-        // Order update will come through socket event
+        // Optimistically update the order status locally
+        setOrders((prev) =>
+          prev.map((order) =>
+            order._id === orderId ? { ...order, status: "cancelled" } : order
+          )
+        );
+
         addNotification({
           id: orderId,
           message: `You have cancelled order #${orderId.substring(
@@ -316,6 +419,8 @@ function UserProfile() {
           isRead: false,
           type: "cancelled",
         });
+      } else {
+        console.error("Error cancelling order:", await response.text());
       }
     } catch (error) {
       console.error("Error cancelling order:", error);
@@ -329,22 +434,34 @@ function UserProfile() {
         <aside className="sidebar">
           <ul>
             <li>
-              <button onClick={() => setActiveSection("profile")}>
+              <button
+                onClick={() => setActiveSection("profile")}
+                className={activeSection === "profile" ? "active" : ""}
+              >
                 Perfil
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveSection("orders")}>
+              <button
+                onClick={() => setActiveSection("orders")}
+                className={activeSection === "orders" ? "active" : ""}
+              >
                 Pedidos
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveSection("Mis Pedidos")}>
+              <button
+                onClick={() => setActiveSection("Mis Pedidos")}
+                className={activeSection === "Mis Pedidos" ? "active" : ""}
+              >
                 Mis Pedidos
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveSection("notifications")}>
+              <button
+                onClick={() => setActiveSection("notifications")}
+                className={activeSection === "notifications" ? "active" : ""}
+              >
                 Notificaciones
                 {hasNewNotifications && (
                   <span className="notification-badge">
@@ -354,13 +471,25 @@ function UserProfile() {
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveSection("upgrade")}>
+              <button
+                onClick={() => setActiveSection("upgrade")}
+                className={activeSection === "upgrade" ? "active" : ""}
+              >
                 Mejorar a Empresa
               </button>
             </li>
           </ul>
         </aside>
         <section className="content-section">
+          {!socketConnected && (
+            <div className="socket-warning">
+              <p>
+                ⚠️ Problemas de conexión. Algunas funciones pueden no estar
+                disponibles.
+              </p>
+            </div>
+          )}
+
           {activeSection === "profile" && (
             <div className="profile-info">
               <h2>Información de Usuario</h2>
@@ -618,7 +747,7 @@ function UserProfile() {
             </button>
           </div>
 
-          <div className="chat-messages">
+          <div className="chat-messages" ref={chatMessagesRef}>
             {chatMessages.length === 0 ? (
               <p className="no-messages">
                 No hay mensajes. ¡Inicia la conversación!
@@ -631,7 +760,14 @@ function UserProfile() {
                     msg.senderId === user.id ? "sent" : "received"
                   }`}
                 >
-                  <div className="message-bubble">{msg.text}</div>
+                  <div className="message-bubble">
+                    {msg.senderId !== user.id && (
+                      <div className="sender-name">
+                        {msg.senderName || "Driver"}
+                      </div>
+                    )}
+                    {msg.text}
+                  </div>
                   <div className="message-time">
                     {new Date(msg.timestamp).toLocaleTimeString()}
                   </div>
@@ -648,7 +784,9 @@ function UserProfile() {
               placeholder="Escribe un mensaje..."
               required
             />
-            <button type="submit">Enviar</button>
+            <button type="submit" disabled={!socketConnected}>
+              {socketConnected ? "Enviar" : "Conectando..."}
+            </button>
           </form>
         </div>
       )}

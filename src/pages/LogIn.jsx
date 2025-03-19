@@ -7,7 +7,7 @@ export const LogIn = ({ closeModal }) => {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext); // Accedemos a la función login del contexto
+  const { login, user } = useContext(AuthContext); // Accedemos a la función login del contexto
   const validateForm = () => {
     let newErrors = {};
     if (!email.includes("@")) newErrors.email = "Ingrese un email válido.";
@@ -21,24 +21,21 @@ export const LogIn = ({ closeModal }) => {
     if (!validateForm()) return;
     const response = await login(email, password); // Llamamos a la función login del contexto
     if (response.success) {
-      closeModal(); // Cierra el modal después de iniciar sesión
+      closeModal();
 
-      // Redirigir según el tipo de usuario
-      if (response.user && response.user.userType) {
-        if (response.user.userType === "driver") {
+      // Use user from AuthContext (which will now be set)
+      const userType = response.user?.userType;
+
+      switch (userType) {
+        case "driver":
           navigate("/driverprofile");
-        } else if (response.user.userType === "company") {
+          break;
+        case "company":
           navigate("/companyprofile");
-        } else {
+          break;
+        default:
           navigate("/userprofile");
-        }
-      } else {
-        navigate("/userprofile"); // Por defecto
       }
-    } else {
-      setErrors(
-        response.errors || { message: "Email o contraseña incorrectos" }
-      );
     }
   };
   return (

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../pages/Navbar";
 import Footer from "../pages/Footer";
 import { AuthContext } from "../components/AuthContext";
-import "./SignUp.css";
+import "./signUp.css";
 const CLOUDINARY_UPLOAD_PRESET = "FastGo";
 export const SignUp = () => {
   const { register, handleSubmit, formState, setError, watch } = useForm();

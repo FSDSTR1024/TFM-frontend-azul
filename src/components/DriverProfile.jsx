@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import Navbar from "../pages/Navbar";
 import Footer from "../pages/Footer";
+import Chat2 from "../components/Chat2";
 import {
   Truck,
   Package,
@@ -861,6 +862,9 @@ const DriverProfile = () => {
                                 const order = orders.find(
                                   (o) => o._id === notification.id
                                 );
+                                {chatMessages && setActiveChatOrder && (
+                                  <Chat2 order={setActiveChatOrder} onClose={handleCloseChat} />
+                                )}
                                 if (order) handleOpenChat(order);
                               }}
                               className="button small primary"
@@ -880,57 +884,67 @@ const DriverProfile = () => {
         )}
 
         {/* Chat Modal */}
-        {activeChatOrder && (
-          <div className="chat-modal">
-            <div className="chat-header">
-              <h3>
-                Chat - Orden #
-                {activeChatOrder._id.substring(activeChatOrder._id.length - 6)}
-              </h3>
-              <button className="close-button" onClick={handleCloseChat}>
-                <XCircle size={20} />
-              </button>
-            </div>
+        {activeTab === "orders" && (
+          <div className="orders-tab">
+            {/* ... código existente ... */}
 
-            <div className="chat-messages">
-              {chatMessages.length === 0 ? (
-                <p className="empty-chat">
-                  No hay mensajes aún. ¡Inicia la conversación!
-                </p>
-              ) : (
-                chatMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`chat-message ${
-                      msg.senderId === profile._id ? "sent" : "received"
-                    }`}
-                  >
-                    <div className="message-bubble">{msg.text}</div>
-                    <div className="message-time">
-                      {new Date(msg.timestamp).toLocaleTimeString()}
+            {orders.length === 0 ? (
+              <div className="empty-state">
+                {/* ... código existente ... */}
+              </div>
+            ) : (
+              <div className="orders-list">
+                {orders.map((order) => (
+                  <div key={order._id} className="order-item">
+                    <div className="order-details">
+                      {/* ... detalles de la orden ... */}
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
 
-            <div className="chat-input">
-              <input
-                type="text"
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                placeholder="Escribe un mensaje..."
-              />
-              <button onClick={handleSendMessage} className="send-button">
-                Enviar
-              </button>
-            </div>
+                    {/* Botón para expandir el chat */}
+                    {(order.status === "accepted" ||
+                      order.status === "in-progress") && (
+                      <button
+                        onClick={() => {
+                          if (
+                            activeChatOrder &&
+                            activeChatOrder._id === order._id
+                          ) {
+                            handleCloseChat();
+                          } else {
+                            handleOpenChat(order);
+                          }
+                        }}
+                        className="button small primary"
+                      >
+                        <MessageCircle size={14} className="icon" />
+                        {activeChatOrder && activeChatOrder._id === order._id
+                          ? "Cerrar Chat"
+                          : "Abrir Chat"}
+                      </button>
+                    )}
+
+                    {/* Chat expandible */}
+                    {activeChatOrder && activeChatOrder._id === order._id && (
+                      <div className="inline-chat-container">
+                        <Chat2
+                          orderId={order._id}
+                          messages={chatMessages}
+                          onSendMessage={handleSendMessage}
+                          messageInput={messageInput}
+                          setMessageInput={setMessageInput}
+                          userId={profile._id}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-      </div>
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 };
