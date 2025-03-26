@@ -27,6 +27,7 @@ import "./DriverProfile.css";
 
 const DriverProfile = () => {
   const [profile, setProfile] = useState(null);
+
   const [orders, setOrders] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,7 @@ const DriverProfile = () => {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedOrders, setCompletedOrders] = useState([]);
   const [availableOrders, setAvailableOrders] = useState([]);
+  const [message, setMessage] = useState("");
   const fileInputRef = useRef(null);
   const socketRef = useRef(null);
   const chatMessagesRef = useRef(null);
@@ -407,6 +409,7 @@ const DriverProfile = () => {
     setShowCompletionModal(true);
     setSelectedImage(null);
     setImagePreview(null);
+    setMessage("");
   };
 
   // Función para cancelar la subida de imagen
@@ -415,33 +418,47 @@ const DriverProfile = () => {
     setShowCompletionModal(false);
     setSelectedImage(null);
     setImagePreview(null);
+    setMessage("");
   };
 
   // Función para completar la orden con prueba de entrega
   const handleCompleteOrder = async () => {
-    if (!selectedImage || !orderToComplete) return;
+    if (!selectedImage || !orderToComplete) {
+      setMessage("Debes seleccionar una imagen como prueba de entrega");
+      return;
+    }
 
     try {
       setUploadingImage(true);
-      const token = localStorage.getItem("token");
+      setMessage("Subiendo imagen...");
 
-      // Primero subimos la imagen
+      // Primero preparamos los datos de la imagen
       const formData = new FormData();
       formData.append("image", selectedImage);
 
+      // Hacer la petición de subida
       const uploadResponse = await fetch("http://localhost:5000/api/upload", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: formData,
       });
 
+      // Verificar si hubo error en la subida
       if (!uploadResponse.ok) {
-        throw new Error("Error al subir la imagen");
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.message || "Error al subir la imagen");
       }
 
       const uploadData = await uploadResponse.json();
+
+      // Verificar que tenemos una URL de imagen
+      if (!uploadData.success || !uploadData.imageUrl) {
+        throw new Error("No se pudo obtener la URL de la imagen");
+      }
+
+      setMessage("Imagen subida. Completando orden...");
       const imageUrl = uploadData.imageUrl;
 
       // Ahora completamos la orden con la URL de la imagen
@@ -450,15 +467,17 @@ const DriverProfile = () => {
         {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ imageUrl }),
         }
       );
 
+      // Verificar si hubo error al completar la orden
       if (!completeResponse.ok) {
-        throw new Error("Error al completar la orden");
+        const errorData = await completeResponse.json();
+        throw new Error(errorData.message || "Error al completar la orden");
       }
 
       const completeData = await completeResponse.json();
@@ -488,14 +507,25 @@ const DriverProfile = () => {
         setNotifications((prev) => [newNotification, ...prev]);
         setHasNewNotifications(true);
 
-        // Cerrar modal
-        setShowCompletionModal(false);
-        setOrderToComplete(null);
-        setSelectedImage(null);
-        setImagePreview(null);
+        // Mensaje de éxito
+        setMessage("¡Orden completada con éxito!");
+
+        // Cerrar modal después de un breve retraso para mostrar el mensaje
+        setTimeout(() => {
+          setShowCompletionModal(false);
+          setOrderToComplete(null);
+          setSelectedImage(null);
+          setImagePreview(null);
+          setMessage("");
+        }, 1500);
+      } else {
+        throw new Error(
+          completeData.message || "Error desconocido al completar la orden"
+        );
       }
     } catch (err) {
       console.error("Error completando orden:", err);
+      setMessage(`Error: ${err.message || "Error desconocido"}`);
     } finally {
       setUploadingImage(false);
     }
@@ -1391,10 +1421,25 @@ const DriverProfile = () => {
                   <XCircle size={20} />
                 </button>
               </div>
+
               <div className="completion-modal-content">
                 <p>
                   Sube una foto como prueba de entrega para completar la orden:
                 </p>
+
+                {message && (
+                  <div
+                    className={`completion-message ${
+                      message.includes("Error")
+                        ? "error"
+                        : message.includes("éxito")
+                        ? "success"
+                        : ""
+                    }`}
+                  >
+                    {message}
+                  </div>
+                )}
 
                 {imagePreview ? (
                   <div className="image-preview-container">
@@ -1406,6 +1451,7 @@ const DriverProfile = () => {
                     <button
                       className="change-image-button"
                       onClick={() => fileInputRef.current.click()}
+                      disabled={uploadingImage}
                     >
                       Cambiar imagen
                     </button>
@@ -1413,10 +1459,20 @@ const DriverProfile = () => {
                 ) : (
                   <div
                     className="image-upload-area"
-                    onClick={() => fileInputRef.current.click()}
+                    onClick={() =>
+                      !uploadingImage && fileInputRef.current.click()
+                    }
+                    style={{
+                      opacity: uploadingImage ? 0.6 : 1,
+                      cursor: uploadingImage ? "not-allowed" : "pointer",
+                    }}
                   >
                     <Camera size={48} className="upload-icon" />
-                    <p>Haz clic para seleccionar una imagen</p>
+                    <p>
+                      {uploadingImage
+                        ? "Subiendo..."
+                        : "Haz clic para seleccionar una imagen"}
+                    </p>
                   </div>
                 )}
 
@@ -1427,12 +1483,14 @@ const DriverProfile = () => {
                   accept="image/*"
                   className="file-input"
                   style={{ display: "none" }}
+                  disabled={uploadingImage}
                 />
 
                 <div className="completion-modal-actions">
                   <button
                     className="button secondary"
                     onClick={handleCancelUpload}
+                    disabled={uploadingImage}
                   >
                     Cancelar
                   </button>
@@ -1441,7 +1499,7 @@ const DriverProfile = () => {
                     onClick={handleCompleteOrder}
                     disabled={!selectedImage || uploadingImage}
                   >
-                    {uploadingImage ? "Subiendo..." : "Completar Entrega"}
+                    {uploadingImage ? "Procesando..." : "Completar Entrega"}
                   </button>
                 </div>
               </div>
