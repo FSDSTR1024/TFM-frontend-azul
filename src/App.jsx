@@ -10,6 +10,7 @@ import DriverProfile from "./components/DriverProfile";
 import CompanyProfile from "./components/CompanyProfile";
 import DriverPage from "./components/DriverPage";
 import Precios from "./components/Precios";
+import ChatMonitor from "./components/ChatMonitor";
 import UserOrders from "./components/UserOrders";
 
 import Chat2 from "./components/Chat2";
@@ -26,6 +27,7 @@ function App() {
           <Route path="/login" element={<LogIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/userprofile" element={<UserProfile />} />
+          <Route path="/chat-monitor" element={<ChatMonitor />} />
           <Route path="/driverprofile" element={<DriverProfile />} />{" "}
           {/* Cambiado a minúsculas para consistencia */}
           <Route path="/companyprofile" element={<CompanyProfile />} />{" "}

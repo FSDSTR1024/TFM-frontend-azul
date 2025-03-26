@@ -56,29 +56,32 @@ function UserProfile() {
     });
 
     if (user && user.id) {
-      // Listen for changes to user's orders
+      // ESCUCHAR TODOS LOS EVENTOS DE CAMBIO DE ESTADO
+
+      // 1. Evento genérico orderUpdated
       socketRef.current.on("orderUpdated", (data) => {
         console.log("Order updated event received:", data);
-        if (data.userId === user.id) {
-          fetchOrders(); // Refresh orders list
+        fetchOrders(); // Refrescar órdenes para asegurar que están actualizadas
 
-          // Add notification based on status
-          let message = `Your order #${data.orderId.substring(
+        // Verificar si esta orden pertenece al usuario actual
+        // Esta verificación es importante para no mostrar notificaciones de órdenes de otros usuarios
+        if (orders.some((order) => order._id === data.orderId)) {
+          let message = `Tu orden #${data.orderId.substring(
             data.orderId.length - 6
-          )} status updated to ${data.status}`;
+          )} ha sido actualizada a ${data.status}`;
 
           if (data.status === "accepted") {
-            message = `Your order #${data.orderId.substring(
+            message = `Tu orden #${data.orderId.substring(
               data.orderId.length - 6
-            )} has been accepted by a driver`;
+            )} ha sido aceptada por un conductor`;
           } else if (data.status === "in-progress") {
-            message = `Your order #${data.orderId.substring(
+            message = `Tu orden #${data.orderId.substring(
               data.orderId.length - 6
-            )} is now in progress`;
+            )} está en camino`;
           } else if (data.status === "completed") {
-            message = `Your order #${data.orderId.substring(
+            message = `Tu orden #${data.orderId.substring(
               data.orderId.length - 6
-            )} has been completed`;
+            )} ha sido completada`;
           }
 
           addNotification({
@@ -91,17 +94,72 @@ function UserProfile() {
         }
       });
 
-      // Listen for order cancellations
+      // 2. Evento específico orderAccepted
+      socketRef.current.on("orderAccepted", (data) => {
+        console.log("Order accepted event received:", data);
+        fetchOrders();
+
+        if (orders.some((order) => order._id === data.orderId)) {
+          addNotification({
+            id: data.orderId,
+            message: `Tu orden #${data.orderId.substring(
+              data.orderId.length - 6
+            )} ha sido aceptada por un conductor`,
+            createdAt: new Date(),
+            isRead: false,
+            type: "accepted",
+          });
+        }
+      });
+
+      // 3. Evento específico orderStarted
+      socketRef.current.on("orderStarted", (data) => {
+        console.log("Order started event received:", data);
+        fetchOrders();
+
+        if (orders.some((order) => order._id === data.orderId)) {
+          addNotification({
+            id: data.orderId,
+            message: `Tu orden #${data.orderId.substring(
+              data.orderId.length - 6
+            )} está en camino`,
+            createdAt: new Date(),
+            isRead: false,
+            type: "in-progress",
+          });
+        }
+      });
+
+      // 4. Evento específico orderCompleted
+      socketRef.current.on("orderCompleted", (data) => {
+        console.log("Order completed event received:", data);
+        fetchOrders();
+
+        if (orders.some((order) => order._id === data.orderId)) {
+          addNotification({
+            id: data.orderId,
+            message: `Tu orden #${data.orderId.substring(
+              data.orderId.length - 6
+            )} ha sido completada`,
+            createdAt: new Date(),
+            isRead: false,
+            type: "completed",
+          });
+        }
+      });
+
+      // 5. Evento específico orderCancelled (ya existente)
       socketRef.current.on("orderCancelled", (data) => {
         console.log("Order cancelled event received:", data);
-        if (data.userId === user.id) {
-          fetchOrders(); // Refresh orders list
+
+        if (orders.some((order) => order._id === data.orderId)) {
+          fetchOrders();
 
           addNotification({
             id: data.orderId,
-            message: `Your order #${data.orderId.substring(
+            message: `Tu orden #${data.orderId.substring(
               data.orderId.length - 6
-            )} has been cancelled`,
+            )} ha sido cancelada`,
             createdAt: new Date(),
             isRead: false,
             type: "cancelled",
@@ -109,9 +167,10 @@ function UserProfile() {
         }
       });
 
-      // Listen for new chat messages with improved logging
+      // Evento para mensajes de chat
       socketRef.current.on("newMessage", (data) => {
         console.log("New message event received:", data);
+
         if (chatOrder && chatOrder._id === data.orderId) {
           setChatMessages((prev) => [...prev, data.message]);
 
@@ -126,7 +185,7 @@ function UserProfile() {
           // Add notification about new message
           addNotification({
             id: data.orderId,
-            message: `New message for order #${data.orderId.substring(
+            message: `Nuevo mensaje para la orden #${data.orderId.substring(
               data.orderId.length - 6
             )}`,
             createdAt: new Date(),
@@ -136,15 +195,16 @@ function UserProfile() {
         }
       });
 
-      // Listen for chat closed event
+      // Evento para cierre de chat
       socketRef.current.on("chatClosed", (data) => {
         console.log("Chat closed event received:", data);
+
         if (chatOrder && chatOrder._id === data.orderId) {
           addNotification({
             id: data.orderId,
-            message: `Chat for order #${data.orderId.substring(
+            message: `El chat para la orden #${data.orderId.substring(
               data.orderId.length - 6
-            )} has been closed`,
+            )} ha sido cerrado`,
             createdAt: new Date(),
             isRead: false,
             type: "chat-closed",
@@ -156,14 +216,20 @@ function UserProfile() {
         }
       });
     }
-
     return () => {
       // Disconnect socket when component unmounts
       if (socketRef.current) {
+        socketRef.current.off("orderUpdated");
+        socketRef.current.off("orderAccepted");
+        socketRef.current.off("orderStarted");
+        socketRef.current.off("orderCompleted");
+        socketRef.current.off("orderCancelled");
+        socketRef.current.off("newMessage");
+        socketRef.current.off("chatClosed");
         socketRef.current.disconnect();
       }
     };
-  }, [user, chatOrder]);
+  }, [user, chatOrder, orders]);
 
   // Auto-scroll to bottom of chat when messages change
   useEffect(() => {
@@ -221,6 +287,58 @@ function UserProfile() {
     fetchOrders();
     fetchNotifications();
   }, []);
+  useEffect(() => {
+    // Solo configurar listeners de chat si hay un chatOrder activo
+    if (socketRef.current && chatOrder) {
+      console.log("Setting up chat listeners for order:", chatOrder._id);
+
+      // Unirse a la sala de chat
+      socketRef.current.emit("joinChatRoom", chatOrder._id);
+
+      // Configurar listener de mensajes para este chat específico
+      const handleNewMessage = (data) => {
+        console.log("New message event in chat useEffect:", data);
+
+        if (data && data.orderId === chatOrder._id && data.message) {
+          console.log("Adding message to chat from useEffect:", data.message);
+
+          setChatMessages((prevMessages) => {
+            // Evitar duplicados
+            if (
+              data.message._id &&
+              prevMessages.some((msg) => msg._id === data.message._id)
+            ) {
+              return prevMessages;
+            }
+
+            // Filtrar mensajes temporales que podrían haber sido reemplazados
+            const filteredMessages = prevMessages.filter(
+              (msg) => !msg._id.toString().startsWith("temp-")
+            );
+
+            return [...filteredMessages, data.message];
+          });
+
+          // Desplazar al final
+          setTimeout(() => {
+            if (chatMessagesRef.current) {
+              chatMessagesRef.current.scrollTop =
+                chatMessagesRef.current.scrollHeight;
+            }
+          }, 100);
+        }
+      };
+
+      // Añadir listener
+      socketRef.current.on("newMessage", handleNewMessage);
+
+      // Limpiar al desmontar o cambiar de chat
+      return () => {
+        console.log("Cleaning up chat listeners");
+        socketRef.current.off("newMessage", handleNewMessage);
+      };
+    }
+  }, [chatOrder]); // Solo volver a ejecutar cuando cambia el chatOrder
 
   // Mark all notifications as read when viewing notifications section
   useEffect(() => {
@@ -289,11 +407,57 @@ function UserProfile() {
     try {
       console.log("Opening chat for order:", order._id);
 
-      // Join the chat room with additional information
-      socketRef.current.emit("joinChatRoom", {
-        orderId: order._id,
-        userId: user.id,
-        userName: `${user.firstName} ${user.lastName}`,
+      // Importante: Limpiar cualquier listener previo para evitar duplicados
+      if (socketRef.current) {
+        socketRef.current.off("newMessage");
+      }
+
+      // Unirse a la sala de chat con formato consistente
+      socketRef.current.emit("joinChatRoom", order._id);
+      console.log("Joined chat room:", order._id);
+
+      // Configurar el listener de newMessage ANTES de obtener los mensajes
+      // para asegurarse de que no se pierda ningún mensaje
+      socketRef.current.on("newMessage", (data) => {
+        console.log("New message received in UserProfile:", data);
+
+        // Verificar si el mensaje es para el chat actual
+        if (data && data.orderId === order._id && data.message) {
+          console.log("Adding message to current chat:", data.message);
+
+          // Usar una función en setState para garantizar el estado más reciente
+          setChatMessages((prevMessages) => {
+            // Evitar duplicados comprobando si el mensaje ya existe
+            if (
+              data.message._id &&
+              prevMessages.some((msg) => msg._id === data.message._id)
+            ) {
+              console.log("Message already exists, not adding duplicate");
+              return prevMessages;
+            }
+            return [...prevMessages, data.message];
+          });
+
+          // Desplazar al final del chat
+          setTimeout(() => {
+            if (chatMessagesRef.current) {
+              chatMessagesRef.current.scrollTop =
+                chatMessagesRef.current.scrollHeight;
+            }
+          }, 100);
+        } else if (data && data.orderId) {
+          // Mensaje para otra orden - añadir notificación
+          console.log("Message for another order, adding notification");
+          addNotification({
+            id: data.orderId,
+            message: `Nuevo mensaje para la orden #${data.orderId.substring(
+              data.orderId.length - 6
+            )}`,
+            createdAt: new Date(),
+            isRead: false,
+            type: "new-message",
+          });
+        }
       });
 
       // Fetch chat messages
@@ -307,10 +471,12 @@ function UserProfile() {
       if (response.ok) {
         const data = await response.json();
         console.log("Chat messages fetched:", data.messages);
-        setChatMessages(data.messages || []);
-        setChatOrder(order);
 
-        // Mark related notifications as read
+        // Actualizar estado de chat
+        setChatOrder(order);
+        setChatMessages(data.messages || []);
+
+        // Marcar notificaciones relacionadas como leídas
         setNotifications((prev) =>
           prev.map((notif) =>
             notif.id === order._id && notif.type === "new-message"
@@ -319,19 +485,22 @@ function UserProfile() {
           )
         );
 
-        // Also mark read on server
+        // Marcar como leídas en el servidor
         try {
-          fetch(
-            `http://localhost:5000/api/notifications/mark-read/${order._id}`,
-            {
-              method: "PUT",
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-            }
-          );
+          await fetch("http://localhost:5000/api/notifications/read", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({
+              notificationIds: notifications
+                .filter((n) => n.id === order._id && n.type === "new-message")
+                .map((n) => n._id),
+            }),
+          });
         } catch (error) {
-          console.error("Error marking chat notifications as read:", error);
+          console.error("Error marking notifications as read:", error);
         }
       } else {
         console.error("Error fetching chat messages:", await response.text());
@@ -342,6 +511,13 @@ function UserProfile() {
   };
 
   const handleCloseChat = () => {
+    console.log("Closing chat");
+
+    // Limpiar el listener de newMessage para evitar comportamientos extraños
+    if (socketRef.current) {
+      socketRef.current.off("newMessage");
+    }
+
     setChatOrder(null);
     setChatMessages([]);
     setMessageInput("");
@@ -353,21 +529,28 @@ function UserProfile() {
     if (!messageInput.trim() || !chatOrder) return;
 
     try {
-      // Create a temporary message object to show immediately
+      // Crear un mensaje temporal para mostrar inmediatamente
       const tempMessage = {
         text: messageInput,
         senderId: user.id,
-        senderName: `${user.firstName} ${user.lastName}`,
         timestamp: new Date().toISOString(),
-        _id: Date.now().toString(), // temporary ID
+        _id: `temp-${Date.now()}`, // ID temporal único
       };
 
-      // Add message immediately to UI
+      // Añadir mensaje inmediatamente a la UI
       setChatMessages((prev) => [...prev, tempMessage]);
 
-      // Clear input
+      // Guardar el mensaje para enviarlo y limpiar input
       const messageToSend = messageInput;
       setMessageInput("");
+
+      // Desplazar al final del chat
+      setTimeout(() => {
+        if (chatMessagesRef.current) {
+          chatMessagesRef.current.scrollTop =
+            chatMessagesRef.current.scrollHeight;
+        }
+      }, 100);
 
       // API call to send message
       const response = await fetch(
@@ -384,6 +567,9 @@ function UserProfile() {
 
       if (!response.ok) {
         console.error("Error sending message:", await response.text());
+        // Podríamos mostrar un error visual aquí
+        // También podríamos restaurar el mensaje no enviado en el input
+        setMessageInput(messageToSend);
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -449,14 +635,7 @@ function UserProfile() {
                 Pedidos
               </button>
             </li>
-            <li>
-              <button
-                onClick={() => setActiveSection("Mis Pedidos")}
-                className={activeSection === "Mis Pedidos" ? "active" : ""}
-              >
-                Mis Pedidos
-              </button>
-            </li>
+
             <li>
               <button
                 onClick={() => setActiveSection("notifications")}

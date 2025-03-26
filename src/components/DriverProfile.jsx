@@ -96,32 +96,41 @@ const DriverProfile = () => {
 
     // Escuchar nuevos mensajes de chat
     socketRef.current.on("newMessage", (data) => {
-      // Si este mensaje es para un chat que estamos viendo actualmente
-      if (activeChatOrder && activeChatOrder._id === data.orderId) {
-        setChatMessages((prev) => [...prev, data.message]);
+      try {
+        console.log("Nuevo mensaje recibido:", data);
+        // Si este mensaje es para un chat que estamos viendo actualmente
+        if (activeChatOrder && activeChatOrder._id === data.orderId) {
+          if (data.message && typeof data.message === "object") {
+            setChatMessages((prev) => [...prev, data.message]);
 
-        // Desplazar al final del chat
-        setTimeout(() => {
-          if (chatMessagesRef.current) {
-            chatMessagesRef.current.scrollTop =
-              chatMessagesRef.current.scrollHeight;
+            // Desplazar al final del chat
+            setTimeout(() => {
+              if (chatMessagesRef.current) {
+                chatMessagesRef.current.scrollTop =
+                  chatMessagesRef.current.scrollHeight;
+              }
+            }, 100);
+          } else {
+            console.error("Estructura de mensaje inválida:", data);
           }
-        }, 100);
-      } else {
-        // Añadir notificación sobre nuevo mensaje
-        const newNotification = {
-          id: data.orderId,
-          message: `Nuevo mensaje en la Orden #${data.orderId.substring(
-            data.orderId.length - 6
-          )}`,
-          createdAt: new Date(),
-          isRead: false,
-          type: "new-message",
-          orderId: data.orderId,
-        };
+        } else {
+          // Añadir notificación sobre nuevo mensaje
+          const newNotification = {
+            id: data.orderId,
+            message: `Nuevo mensaje en la Orden #${data.orderId.substring(
+              data.orderId.length - 6
+            )}`,
+            createdAt: new Date(),
+            isRead: false,
+            type: "new-message",
+            orderId: data.orderId,
+          };
 
-        setNotifications((prev) => [newNotification, ...prev]);
-        setHasNewNotifications(true);
+          setNotifications((prev) => [newNotification, ...prev]);
+          setHasNewNotifications(true);
+        }
+      } catch (error) {
+        console.error("Error procesando nuevo mensaje:", error);
       }
     });
 
