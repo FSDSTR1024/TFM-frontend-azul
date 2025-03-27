@@ -1,10 +1,9 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import UserOrders from "./UserOrders";
 import Navbar from "../pages/Navbar";
 import Footer from "../pages/Footer";
 import { AuthContext } from "../components/AuthContext";
-import { Link } from "react-router-dom";
 import Chat2 from "../components/Chat2";
 import { io } from "socket.io-client";
 import "./UserProfile.css";
@@ -29,17 +28,54 @@ function UserProfile() {
   const chatMessagesRef = useRef(null);
   const navigate = useNavigate();
 
-  // Initialize Socket.io connection with improved error handling
+  // Función para agregar una notificación
+  const addNotification = (notification) => {
+    setNotifications((prev) => [notification, ...prev]);
+    setHasNewNotifications(true);
+  };
+
+  // Función para obtener órdenes del usuario
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/orders/user", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("User orders fetched:", data);
+        setOrders(data);
+      } else {
+        console.error("Error fetching orders:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    }
+  };
+
+  // Función para obtener notificaciones del usuario
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/notifications", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      } else {
+        console.error("Error fetching notifications:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  // Inicialización de Socket.io y listeners de eventos
   useEffect(() => {
-    // Connect to socket server
     socketRef.current = io("http://localhost:5000", {
       withCredentials: true,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
     });
 
-    // Track connection status
     socketRef.current.on("connect", () => {
       console.log("Socket connected successfully!");
       setSocketConnected(true);
@@ -56,125 +92,103 @@ function UserProfile() {
     });
 
     if (user && user.id) {
-      // ESCUCHAR TODOS LOS EVENTOS DE CAMBIO DE ESTADO
-
-      // 1. Evento genérico orderUpdated
+      // Evento genérico orderUpdated
       socketRef.current.on("orderUpdated", (data) => {
         console.log("Order updated event received:", data);
-        fetchOrders(); // Refrescar órdenes para asegurar que están actualizadas
+        fetchOrders(); // Refresca las órdenes
 
-        // Verificar si esta orden pertenece al usuario actual
-        // Esta verificación es importante para no mostrar notificaciones de órdenes de otros usuarios
-        if (orders.some((order) => order._id === data.orderId)) {
-          let message = `Tu orden #${data.orderId.substring(
+        let message = `Tu orden #${data.orderId.substring(
+          data.orderId.length - 6
+        )} ha sido actualizada a ${data.status}`;
+
+        if (data.status === "accepted") {
+          message = `Tu orden #${data.orderId.substring(
             data.orderId.length - 6
-          )} ha sido actualizada a ${data.status}`;
-
-          if (data.status === "accepted") {
-            message = `Tu orden #${data.orderId.substring(
-              data.orderId.length - 6
-            )} ha sido aceptada por un conductor`;
-          } else if (data.status === "in-progress") {
-            message = `Tu orden #${data.orderId.substring(
-              data.orderId.length - 6
-            )} está en camino`;
-          } else if (data.status === "completed") {
-            message = `Tu orden #${data.orderId.substring(
-              data.orderId.length - 6
-            )} ha sido completada`;
-          }
-
-          addNotification({
-            id: data.orderId,
-            message,
-            createdAt: new Date(),
-            isRead: false,
-            type: data.status,
-          });
+          )} ha sido aceptada por un conductor`;
+        } else if (data.status === "in-progress") {
+          message = `Tu orden #${data.orderId.substring(
+            data.orderId.length - 6
+          )} está en camino`;
+        } else if (data.status === "completed") {
+          message = `Tu orden #${data.orderId.substring(
+            data.orderId.length - 6
+          )} ha sido completada`;
         }
+
+        addNotification({
+          id: data.orderId,
+          message,
+          createdAt: new Date(),
+          isRead: false,
+          type: data.status,
+        });
       });
 
-      // 2. Evento específico orderAccepted
+      // Evento específico orderAccepted
       socketRef.current.on("orderAccepted", (data) => {
         console.log("Order accepted event received:", data);
         fetchOrders();
-
-        if (orders.some((order) => order._id === data.orderId)) {
-          addNotification({
-            id: data.orderId,
-            message: `Tu orden #${data.orderId.substring(
-              data.orderId.length - 6
-            )} ha sido aceptada por un conductor`,
-            createdAt: new Date(),
-            isRead: false,
-            type: "accepted",
-          });
-        }
+        addNotification({
+          id: data.orderId,
+          message: `Tu orden #${data.orderId.substring(
+            data.orderId.length - 6
+          )} ha sido aceptada por un conductor`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "accepted",
+        });
       });
 
-      // 3. Evento específico orderStarted
+      // Evento específico orderStarted
       socketRef.current.on("orderStarted", (data) => {
         console.log("Order started event received:", data);
         fetchOrders();
-
-        if (orders.some((order) => order._id === data.orderId)) {
-          addNotification({
-            id: data.orderId,
-            message: `Tu orden #${data.orderId.substring(
-              data.orderId.length - 6
-            )} está en camino`,
-            createdAt: new Date(),
-            isRead: false,
-            type: "in-progress",
-          });
-        }
+        addNotification({
+          id: data.orderId,
+          message: `Tu orden #${data.orderId.substring(
+            data.orderId.length - 6
+          )} está en camino`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "in-progress",
+        });
       });
 
-      // 4. Evento específico orderCompleted
+      // Evento específico orderCompleted
       socketRef.current.on("orderCompleted", (data) => {
         console.log("Order completed event received:", data);
         fetchOrders();
-
-        if (orders.some((order) => order._id === data.orderId)) {
-          addNotification({
-            id: data.orderId,
-            message: `Tu orden #${data.orderId.substring(
-              data.orderId.length - 6
-            )} ha sido completada`,
-            createdAt: new Date(),
-            isRead: false,
-            type: "completed",
-          });
-        }
+        addNotification({
+          id: data.orderId,
+          message: `Tu orden #${data.orderId.substring(
+            data.orderId.length - 6
+          )} ha sido completada`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "completed",
+        });
       });
 
-      // 5. Evento específico orderCancelled (ya existente)
+      // Evento específico orderCancelled
       socketRef.current.on("orderCancelled", (data) => {
         console.log("Order cancelled event received:", data);
-
-        if (orders.some((order) => order._id === data.orderId)) {
-          fetchOrders();
-
-          addNotification({
-            id: data.orderId,
-            message: `Tu orden #${data.orderId.substring(
-              data.orderId.length - 6
-            )} ha sido cancelada`,
-            createdAt: new Date(),
-            isRead: false,
-            type: "cancelled",
-          });
-        }
+        fetchOrders();
+        addNotification({
+          id: data.orderId,
+          message: `Tu orden #${data.orderId.substring(
+            data.orderId.length - 6
+          )} ha sido cancelada`,
+          createdAt: new Date(),
+          isRead: false,
+          type: "cancelled",
+        });
       });
 
       // Evento para mensajes de chat
       socketRef.current.on("newMessage", (data) => {
         console.log("New message event received:", data);
-
         if (chatOrder && chatOrder._id === data.orderId) {
           setChatMessages((prev) => [...prev, data.message]);
-
-          // Scroll to bottom when new message arrives
           setTimeout(() => {
             if (chatMessagesRef.current) {
               chatMessagesRef.current.scrollTop =
@@ -182,7 +196,6 @@ function UserProfile() {
             }
           }, 100);
         } else {
-          // Add notification about new message
           addNotification({
             id: data.orderId,
             message: `Nuevo mensaje para la orden #${data.orderId.substring(
@@ -198,7 +211,6 @@ function UserProfile() {
       // Evento para cierre de chat
       socketRef.current.on("chatClosed", (data) => {
         console.log("Chat closed event received:", data);
-
         if (chatOrder && chatOrder._id === data.orderId) {
           addNotification({
             id: data.orderId,
@@ -209,15 +221,12 @@ function UserProfile() {
             isRead: false,
             type: "chat-closed",
           });
-
-          // Close the chat if it's open
           setChatOrder(null);
           setChatMessages([]);
         }
       });
     }
     return () => {
-      // Disconnect socket when component unmounts
       if (socketRef.current) {
         socketRef.current.off("orderUpdated");
         socketRef.current.off("orderAccepted");
@@ -229,118 +238,23 @@ function UserProfile() {
         socketRef.current.disconnect();
       }
     };
-  }, [user, chatOrder, orders]);
+  }, [user, chatOrder]);
 
-  // Auto-scroll to bottom of chat when messages change
+  // Auto-scroll en el chat cuando cambian los mensajes
   useEffect(() => {
     if (chatMessagesRef.current) {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [chatMessages]);
 
-  // Function to add a notification to the list
-  const addNotification = (notification) => {
-    setNotifications((prev) => [notification, ...prev]);
-    setHasNewNotifications(true);
-  };
-
-  // Fetch user orders
-  const fetchOrders = async () => {
-    try {
-      const response = await fetch("http://localhost:5000/api/orders/user", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("User orders fetched:", data);
-        setOrders(data);
-      } else {
-        console.error("Error fetching orders:", await response.text());
-      }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-    }
-  };
-
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    try {
-      const response = await fetch("http://localhost:5000/api/notifications", {
-        method: "GET",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data);
-      } else {
-        console.error("Error fetching notifications:", await response.text());
-      }
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
-
+  // Cargar datos iniciales
   useEffect(() => {
     fetchUserProfile();
     fetchOrders();
     fetchNotifications();
   }, []);
-  useEffect(() => {
-    // Solo configurar listeners de chat si hay un chatOrder activo
-    if (socketRef.current && chatOrder) {
-      console.log("Setting up chat listeners for order:", chatOrder._id);
 
-      // Unirse a la sala de chat
-      socketRef.current.emit("joinChatRoom", chatOrder._id);
-
-      // Configurar listener de mensajes para este chat específico
-      const handleNewMessage = (data) => {
-        console.log("New message event in chat useEffect:", data);
-
-        if (data && data.orderId === chatOrder._id && data.message) {
-          console.log("Adding message to chat from useEffect:", data.message);
-
-          setChatMessages((prevMessages) => {
-            // Evitar duplicados
-            if (
-              data.message._id &&
-              prevMessages.some((msg) => msg._id === data.message._id)
-            ) {
-              return prevMessages;
-            }
-
-            // Filtrar mensajes temporales que podrían haber sido reemplazados
-            const filteredMessages = prevMessages.filter(
-              (msg) => !msg._id.toString().startsWith("temp-")
-            );
-
-            return [...filteredMessages, data.message];
-          });
-
-          // Desplazar al final
-          setTimeout(() => {
-            if (chatMessagesRef.current) {
-              chatMessagesRef.current.scrollTop =
-                chatMessagesRef.current.scrollHeight;
-            }
-          }, 100);
-        }
-      };
-
-      // Añadir listener
-      socketRef.current.on("newMessage", handleNewMessage);
-
-      // Limpiar al desmontar o cambiar de chat
-      return () => {
-        console.log("Cleaning up chat listeners");
-        socketRef.current.off("newMessage", handleNewMessage);
-      };
-    }
-  }, [chatOrder]); // Solo volver a ejecutar cuando cambia el chatOrder
-
-  // Mark all notifications as read when viewing notifications section
+  // Marcar notificaciones como leídas al ver la sección
   useEffect(() => {
     if (activeSection === "notifications" && hasNewNotifications) {
       setNotifications((prev) =>
@@ -348,17 +262,25 @@ function UserProfile() {
       );
       setHasNewNotifications(false);
 
-      // API call to mark notifications as read
+      // Llamada API corregida para marcar notificaciones como leídas
       try {
-        fetch("http://localhost:5000/api/notifications/mark-read", {
+        fetch("http://localhost:5000/api/notifications/read", {
           method: "PUT",
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            notificationIds: notifications
+              .filter((n) => !n.isRead && n._id)
+              .map((n) => n._id),
+          }),
         });
       } catch (error) {
         console.error("Error marking notifications as read:", error);
       }
     }
-  }, [activeSection, hasNewNotifications]);
+  }, [activeSection, hasNewNotifications, notifications]);
 
   if (!user) {
     return <p>Debes iniciar sesión para ver tu perfil.</p>;
@@ -374,7 +296,6 @@ function UserProfile() {
 
   const handleUpgradeSubmit = async (e) => {
     e.preventDefault();
-
     const formData = new FormData(e.target);
     const data = {
       companyName: formData.get("companyName"),
@@ -383,7 +304,6 @@ function UserProfile() {
       email: formData.get("email"),
       address: formData.get("address"),
     };
-
     try {
       const response = await fetch("http://localhost:5000/api/upgrade", {
         method: "POST",
@@ -406,39 +326,22 @@ function UserProfile() {
   const handleOpenChat = async (order) => {
     try {
       console.log("Opening chat for order:", order._id);
-
-      // Importante: Limpiar cualquier listener previo para evitar duplicados
       if (socketRef.current) {
         socketRef.current.off("newMessage");
       }
-
-      // Unirse a la sala de chat con formato consistente
       socketRef.current.emit("joinChatRoom", order._id);
-      console.log("Joined chat room:", order._id);
-
-      // Configurar el listener de newMessage ANTES de obtener los mensajes
-      // para asegurarse de que no se pierda ningún mensaje
       socketRef.current.on("newMessage", (data) => {
         console.log("New message received in UserProfile:", data);
-
-        // Verificar si el mensaje es para el chat actual
         if (data && data.orderId === order._id && data.message) {
-          console.log("Adding message to current chat:", data.message);
-
-          // Usar una función en setState para garantizar el estado más reciente
           setChatMessages((prevMessages) => {
-            // Evitar duplicados comprobando si el mensaje ya existe
             if (
               data.message._id &&
               prevMessages.some((msg) => msg._id === data.message._id)
             ) {
-              console.log("Message already exists, not adding duplicate");
               return prevMessages;
             }
             return [...prevMessages, data.message];
           });
-
-          // Desplazar al final del chat
           setTimeout(() => {
             if (chatMessagesRef.current) {
               chatMessagesRef.current.scrollTop =
@@ -446,8 +349,6 @@ function UserProfile() {
             }
           }, 100);
         } else if (data && data.orderId) {
-          // Mensaje para otra orden - añadir notificación
-          console.log("Message for another order, adding notification");
           addNotification({
             id: data.orderId,
             message: `Nuevo mensaje para la orden #${data.orderId.substring(
@@ -459,24 +360,17 @@ function UserProfile() {
           });
         }
       });
-
-      // Fetch chat messages
       const response = await fetch(
         `http://localhost:5000/api/chat/${order._id}/messages`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
-
       if (response.ok) {
         const data = await response.json();
         console.log("Chat messages fetched:", data.messages);
-
-        // Actualizar estado de chat
         setChatOrder(order);
         setChatMessages(data.messages || []);
-
-        // Marcar notificaciones relacionadas como leídas
         setNotifications((prev) =>
           prev.map((notif) =>
             notif.id === order._id && notif.type === "new-message"
@@ -484,8 +378,6 @@ function UserProfile() {
               : notif
           )
         );
-
-        // Marcar como leídas en el servidor
         try {
           await fetch("http://localhost:5000/api/notifications/read", {
             method: "PUT",
@@ -495,7 +387,9 @@ function UserProfile() {
             },
             body: JSON.stringify({
               notificationIds: notifications
-                .filter((n) => n.id === order._id && n.type === "new-message")
+                .filter(
+                  (n) => n.id === order._id && n.type === "new-message" && n._id
+                )
                 .map((n) => n._id),
             }),
           });
@@ -512,12 +406,9 @@ function UserProfile() {
 
   const handleCloseChat = () => {
     console.log("Closing chat");
-
-    // Limpiar el listener de newMessage para evitar comportamientos extraños
     if (socketRef.current) {
       socketRef.current.off("newMessage");
     }
-
     setChatOrder(null);
     setChatMessages([]);
     setMessageInput("");
@@ -525,34 +416,23 @@ function UserProfile() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-
     if (!messageInput.trim() || !chatOrder) return;
-
     try {
-      // Crear un mensaje temporal para mostrar inmediatamente
       const tempMessage = {
         text: messageInput,
         senderId: user.id,
         timestamp: new Date().toISOString(),
-        _id: `temp-${Date.now()}`, // ID temporal único
+        _id: `temp-${Date.now()}`,
       };
-
-      // Añadir mensaje inmediatamente a la UI
       setChatMessages((prev) => [...prev, tempMessage]);
-
-      // Guardar el mensaje para enviarlo y limpiar input
       const messageToSend = messageInput;
       setMessageInput("");
-
-      // Desplazar al final del chat
       setTimeout(() => {
         if (chatMessagesRef.current) {
           chatMessagesRef.current.scrollTop =
             chatMessagesRef.current.scrollHeight;
         }
       }, 100);
-
-      // API call to send message
       const response = await fetch(
         `http://localhost:5000/api/chat/${chatOrder._id}/message`,
         {
@@ -564,11 +444,8 @@ function UserProfile() {
           body: JSON.stringify({ text: messageToSend }),
         }
       );
-
       if (!response.ok) {
         console.error("Error sending message:", await response.text());
-        // Podríamos mostrar un error visual aquí
-        // También podríamos restaurar el mensaje no enviado en el input
         setMessageInput(messageToSend);
       }
     } catch (error) {
@@ -587,15 +464,12 @@ function UserProfile() {
           },
         }
       );
-
       if (response.ok) {
-        // Optimistically update the order status locally
         setOrders((prev) =>
           prev.map((order) =>
             order._id === orderId ? { ...order, status: "cancelled" } : order
           )
         );
-
         addNotification({
           id: orderId,
           message: `You have cancelled order #${orderId.substring(
@@ -635,7 +509,6 @@ function UserProfile() {
                 Pedidos
               </button>
             </li>
-
             <li>
               <button
                 onClick={() => setActiveSection("notifications")}
@@ -668,7 +541,6 @@ function UserProfile() {
               </p>
             </div>
           )}
-
           {activeSection === "profile" && (
             <div className="profile-info">
               <h2>Información de Usuario</h2>
@@ -715,7 +587,6 @@ function UserProfile() {
                       <option value="moto">Moto</option>
                       <option value="coche">Coche</option>
                     </select>
-
                     <select
                       onChange={(e) =>
                         setFilters({ ...filters, status: e.target.value })
@@ -730,7 +601,6 @@ function UserProfile() {
                       <option value="cancelled">Cancelado</option>
                     </select>
                   </div>
-
                   {filteredOrders.length > 0 ? (
                     <div className="orders-grid">
                       {filteredOrders.map((order) => (
@@ -750,7 +620,6 @@ function UserProfile() {
                               {order.status === "cancelled" && "Cancelado"}
                             </span>
                           </div>
-
                           <div className="order-details">
                             <p>
                               <strong>Recogida:</strong> {order.pickupLocation}
@@ -769,7 +638,6 @@ function UserProfile() {
                               <strong>Precio:</strong> €{order.price.toFixed(2)}
                             </p>
                           </div>
-
                           <div className="order-actions">
                             {order.status === "pending" && (
                               <button
@@ -779,7 +647,6 @@ function UserProfile() {
                                 Cancelar
                               </button>
                             )}
-
                             {(order.status === "accepted" ||
                               order.status === "in-progress") && (
                               <button
@@ -789,7 +656,6 @@ function UserProfile() {
                                 Chat con Driver
                               </button>
                             )}
-
                             {order.status === "completed" &&
                               order.proofOfDelivery && (
                                 <button
@@ -840,12 +706,10 @@ function UserProfile() {
                           {new Date(notif.createdAt).toLocaleString()}
                         </span>
                       </div>
-
                       {notif.type === "new-message" && (
                         <button
                           className="reply-button"
                           onClick={() => {
-                            // Find order and open chat
                             const order = orders.find(
                               (o) => o._id === notif.id
                             );
@@ -868,7 +732,6 @@ function UserProfile() {
               <h2>Mejorar a Empresa</h2>
               <form onSubmit={handleUpgradeSubmit}>
                 <label>Nombre de la Empresa</label>
-
                 <input
                   type="text"
                   name="companyName"
@@ -905,7 +768,6 @@ function UserProfile() {
                 />
                 <button type="submit">Enviar Solicitud</button>
               </form>
-
               {upgradeMessage && (
                 <p className="upgrade-message">{upgradeMessage}</p>
               )}
@@ -914,7 +776,6 @@ function UserProfile() {
         </section>
       </div>
 
-      {/* Chat Modal */}
       {chatOrder && (
         <div className="chat-modal">
           <div className="chat-header">
@@ -925,7 +786,6 @@ function UserProfile() {
               ×
             </button>
           </div>
-
           <div className="chat-messages" ref={chatMessagesRef}>
             {chatMessages.length === 0 ? (
               <p className="no-messages">
@@ -936,17 +796,10 @@ function UserProfile() {
                 <div
                   key={idx}
                   className={`message ${
-                    msg.senderId === user.id ? "sent" : "received"
+                    msg.senderId === user._id ? "sent" : "received"
                   }`}
                 >
-                  <div className="message-bubble">
-                    {msg.senderId !== user.id && (
-                      <div className="sender-name">
-                        {msg.senderName || "Driver"}
-                      </div>
-                    )}
-                    {msg.text}
-                  </div>
+                  <div className="message-bubble">{msg.text}</div>
                   <div className="message-time">
                     {new Date(msg.timestamp).toLocaleTimeString()}
                   </div>
@@ -954,7 +807,6 @@ function UserProfile() {
               ))
             )}
           </div>
-
           <form className="chat-input" onSubmit={handleSendMessage}>
             <input
               type="text"
@@ -969,7 +821,6 @@ function UserProfile() {
           </form>
         </div>
       )}
-
       <Footer />
     </div>
   );
