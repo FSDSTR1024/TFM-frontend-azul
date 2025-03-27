@@ -1,75 +1,463 @@
-/* Contenedor principal */
+/* Modern Registration Form Styles */
+:root {
+  --primary-color: #b71c1c;
+  --primary-light: #f9e7e7;
+  --primary-dark: #8e1414;
+  --accent-color: #3498db;
+  --text-color: #333333;
+  --text-light: #757575;
+  --error-color: #e74c3c;
+  --success-color: #2ecc71;
+  --border-color: #ddd;
+  --card-bg: #ffffff;
+  --bg-color: #f4f4f4;
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --border-radius: 10px;
+  --transition: all 0.3s ease;
+}
+
+/* Main Container */
 .registration-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  font-family: "Arial", sans-serif;
-  background-color: #f4f4f4;
+  min-height: 100vh;
+  font-family: 'Arial', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
-/* Estilos del formulario */
+/* Form Container */
 .registration-form {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 50%;
-  margin: auto;
-  text-align: center;
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  width: 92%;
+  max-width: 600px;
+  margin: 3rem auto;
+  padding: 2.5rem;
+  animation: formAppear 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
 }
 
+.registration-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+}
+
+/* Form Header */
 .registration-form h2 {
   font-size: 1.8rem;
-  margin-bottom: 1rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+  padding-bottom: 0.5rem;
 }
 
-/* Input fields */
-.registration-form input {
-  width: 100%;
-  padding: 0.6rem;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-  margin-top: 5px;
+.registration-form h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 3px;
 }
 
-/* Labels */
+/* Form Groups */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
 .registration-form label {
   display: block;
-  font-weight: bold;
-  margin-top: 1rem;
-  text-align: left;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-size: 0.95rem;
+  transition: var(--transition);
 }
 
-/* Botón */
-.registration-form button {
-  background: #007bff;
-  color: white;
-  font-size: 1rem;
-  padding: 0.8rem;
-  border: none;
-  cursor: pointer;
-  border-radius: 5px;
+.registration-form input {
   width: 100%;
-  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: calc(var(--border-radius) / 2);
+  font-size: 1rem;
+  transition: var(--transition);
+  background-color: var(--card-bg);
+}
+
+.registration-form input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  outline: none;
+}
+
+/* Error Messages */
+.error {
+  color: var(--error-color);
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+  display: block;
+  animation: shake 0.5s;
+}
+
+/* Submit Button */
+.registration-form button {
+  width: 100%;
+  padding: 0.9rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
 }
 
 .registration-form button:hover {
-  background: #0056b3;
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(183, 28, 28, 0.2);
 }
 
-/* Mensajes de error */
-.error {
-  color: red;
-  font-size: 0.9rem;
-  margin-top: 5px;
-  display: block;
+.registration-form button:active {
+  transform: translateY(0);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+.registration-form button:disabled {
+  background-color: #c0c0c0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.form-section-title {
+  font-size: 1.2rem;
+  color: var(--text-color);
+  margin-bottom: 1.2rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.form-section-title svg {
+  margin-right: 0.5rem;
+  color: var(--primary-color);
+}
+
+/* Form Columns for Desktop */
+.form-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Help Text */
+.help-text {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-top: 0.3rem;
+}
+
+/* Success Message */
+.success-message {
+  background-color: rgba(46, 204, 113, 0.1);
+  color: var(--success-color);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.success-message svg {
+  margin-right: 0.5rem;
+}
+
+/* Loading Indicator */
+.loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.5rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+}
+
+/* Form Progress Indicator */
+.form-progress {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.form-progress::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #e0e0e0;
+  z-index: 1;
+}
+
+.progress-step {
+  position: relative;
+  z-index: 2;
+  background-color: var(--card-bg);
+}
+
+.step-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #757575;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.progress-step.active .step-number {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.progress-step.completed .step-number {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.step-label {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  text-align: center;
+}
+
+.progress-step.active .step-label {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Password Strength Meter */
+.password-strength {
+  margin-top: 0.5rem;
+}
+
+.strength-bar {
+  height: 4px;
+  background-color: #eee;
+  margin-top: 0.3rem;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.strength-bar-fill {
+  height: 100%;
+  width: 0;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-text {
+  font-size: 0.75rem;
+  margin-top: 0.3rem;
+}
+
+.strength-weak .strength-bar-fill {
+  width: 25%;
+  background-color: #e74c3c;
+}
+
+.strength-medium .strength-bar-fill {
+  width: 50%;
+  background-color: #f39c12;
+}
+
+.strength-good .strength-bar-fill {
+  width: 75%;
+  background-color: #3498db;
+}
+
+.strength-strong .strength-bar-fill {
+  width: 100%;
+  background-color: #2ecc71;
+}
+
+/* Authentication Error */
+.authentication-error {
+  background-color: var(--primary-light);
+  border-left: 4px solid var(--primary-color);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  max-width: 600px;
+  margin: 3rem auto;
+  text-align: center;
+}
+
+.authentication-error h2 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.authentication-error button {
+  margin-top: 1.5rem;
+  padding: 0.8rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: calc(var(--border-radius) / 2);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.authentication-error button:hover {
+  background-color: var(--primary-dark);
+}
+
+/* Animations */
+@keyframes formAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Media Queries */
+@media (min-width: 576px) {
+  .registration-form {
+    padding: 3rem;
+  }
+}
+
+@media (min-width: 768px) {
   .registration-form {
     width: 80%;
-    padding: 1rem;
+    padding: 3.5rem;
+  }
+  
+  .form-columns {
+    flex-direction: row;
+  }
+  
+  .form-columns > * {
+    flex: 1;
+  }
+}
+
+@media (min-width: 992px) {
+  .registration-form {
+    width: 70%;
+  }
+  
+  .form-section-title {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 575px) {
+  .registration-form {
+    padding: 1.5rem;
+    margin: 1.5rem auto;
+  }
+  
+  .registration-form h2 {
+    font-size: 1.5rem;
+  }
+  
+  .form-progress {
+    display: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-color: #f0f0f0;
+    --text-light: #a0a0a0;
+    --card-bg: #2d2d2d;
+    --bg-color: #1a1a1a;
+    --border-color: #444;
+  }
+  
+  .registration-form input {
+    background-color: #3a3a3a;
+    color: #f0f0f0;
+  }
+  
+  .form-section {
+    border-bottom-color: #444;
+  }
+  
+  .form-progress::before {
+    background-color: #444;
+  }
+  
+  .progress-step {
+    background-color: var(--card-bg);
+  }
+  
+  .step-number {
+    background-color: #444;
+    color: #a0a0a0;
   }
 }

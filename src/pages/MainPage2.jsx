@@ -1,85 +1,87 @@
-// eslint-disable-next-line no-unused-vars
-import React, { useState } from "react";
+import React from "react";
 import "./MainPage2.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCheckCircle,
-  faShippingFast,
-  faClock,
-  faShieldAlt,
-} from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
 
 export const MainPage2 = () => {
+  const navigate = useNavigate();
+
+  const handleAction = () => {
+    navigate("/SignUp");
+  };
+
   return (
     <div className="main-page">
-      {/* Navbar */}
       <Navbar />
 
       {/* Hero Section */}
-      <section className="hero">
-        <h1>Envíos Rápidos y Seguros con FlashGo</h1>
-        <p>
-          Plataforma de envíos a demanda. Escoge tu método ideal y comienza
-          ahora.
-        </p>
-        <button className="btn-primary">Reserva Ahora</button>
+      <section className="hero-landing">
+        <div className="hero-content">
+          <div className="hero-text">
+            <h1 className="hero-title">
+              Envíos Rápidos y Seguros
+              <span className="hero-subtitle">Con FlashGo, Tu Paquete Siempre Llega</span>
+            </h1>
+            
+            <p className="hero-description">
+              Revolucionamos la logística de entregas. Conectamos personas y 
+              negocios con soluciones de envío inteligentes y personalizadas.
+            </p>
+            
+            <div className="hero-cta">
+              <button 
+                className="btn-primary" 
+                onClick={handleAction}
+              >
+                Comienza Ahora
+              </button>
+              <button 
+                className="btn-secondary"
+                onClick={() => navigate("/Precios")}
+              >
+                Conoce Nuestros Precios
+              </button>
+            </div>
+          </div>
+          
+          <div className="hero-visual">
+            <div className="delivery-animation">
+              <div className="package package-1"></div>
+              <div className="package package-2"></div>
+              <div className="package package-3"></div>
+              <div className="vehicle"></div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Sección Por qué elegirnos */}
-      <section className="why-choose-us">
-        <h2>¿Por qué elegir nuestros servicios?</h2>
-        <div className="benefits">
+      {/* Beneficios */}
+      <section className="benefits-section">
+        <div className="benefits-container">
           <div className="benefit">
-            <FontAwesomeIcon icon={faShippingFast} className="icon" />
-            <h3>Envíos Rápidos</h3>
-            <p>Entregamos tus paquetes en tiempo récord.</p>
+            <div className="benefit-icon">🚚</div>
+            <h3>Entregas Rápidas</h3>
+            <p>Envíos express en tiempo récord</p>
           </div>
           <div className="benefit">
-            <FontAwesomeIcon icon={faShieldAlt} className="icon" />
+            <div className="benefit-icon">🛡️</div>
             <h3>Seguridad Garantizada</h3>
-            <p>Tu paquete estará seguro en todo momento.</p>
+            <p>Tus paquetes siempre protegidos</p>
           </div>
           <div className="benefit">
-            <FontAwesomeIcon icon={faClock} className="icon" />
-            <h3>Disponibilidad 24/7</h3>
-            <p>Realiza envíos en cualquier momento del día.</p>
+            <div className="benefit-icon">📍</div>
+            <h3>Cobertura Total</h3>
+            <p>Servicio en múltiples ciudades</p>
           </div>
           <div className="benefit">
-            <FontAwesomeIcon icon={faCheckCircle} className="icon" />
-            <h3>Alta Satisfacción</h3>
-            <p>Nuestros clientes nos recomiendan.</p>
-          </div>
-        </div>
-        <button className="btn-try-now">Prueba ya</button>
-      </section>
-
-      {/* Sección Tipos de Vehículos */}
-      <section className="vehicle-section">
-        <h2>Nuestros Vehículos</h2>
-        <div className="vehicle-grid">
-          <div className="vehicle-box">
-            <img src="/assets/walking.png" alt="Envío Andando" />
-            <p>Andando</p>
-          </div>
-          <div className="vehicle-box">
-            <img src="/assets/bike.png" alt="Envío en Bicicleta" />
-            <p>Bicicleta</p>
-          </div>
-          <div className="vehicle-box">
-            <img src="/assets/car.png" alt="Envío en Coche" />
-            <p>Coche</p>
-          </div>
-          <div className="vehicle-box">
-            <img src="/assets/van.png" alt="Envío en Furgoneta" />
-            <p>Furgoneta</p>
+            <div className="benefit-icon">💻</div>
+            <h3>Seguimiento Online</h3>
+            <p>Controla tu envío en tiempo real</p>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

@@ -1,0 +1,107 @@
+/* Color Variables for the entire application */
+:root {
+  /* Primary Colors */
+  --primary-color: #b71c1c;
+  --primary-dark: #8e1414;
+  --primary-light: #f9e7e7;
+  
+  /* Accent Colors */
+  --accent-color: #2196f3;
+  --accent-dark: #1976d2;
+  --accent-light: #e3f2fd;
+  
+  /* Status Colors */
+  --success-color: #4caf50;
+  --success-light: #e8f5e9;
+  --warning-color: #ff9800;
+  --warning-light: #fff8e1;
+  --danger-color: #f44336;
+  --danger-light: #ffebee;
+  --info-color: #00bcd4;
+  --info-light: #e0f7fa;
+  
+  /* Text Colors */
+  --text-color: #333333;
+  --text-light: #757575;
+  --text-dark: #212121;
+  --text-white: #ffffff;
+  
+  /* Background Colors */
+  --bg-white: #ffffff;
+  --bg-light: #f5f5f5;
+  --bg-dark: #222222;
+  
+  /* Border Colors */
+  --border-color: #e0e0e0;
+  --border-light: #f0f0f0;
+  --border-dark: #bdbdbd;
+  
+  /* Shadow Variables */
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.2);
+  
+  /* Border Radius */
+  --border-radius: 10px;
+  --border-radius-sm: 5px;
+  --border-radius-lg: 15px;
+  
+  /* Transitions */
+  --transition: all 0.3s ease;
+  --transition-fast: all 0.2s ease;
+  --transition-slow: all 0.5s ease;
+  
+  /* Chat-specific Variables */
+  --sent-message-bg: var(--primary-color);
+  --received-message-bg: var(--bg-white);
+  
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+}
+
+/* Dark Mode Variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Text Colors - Dark Mode */
+    --text-color: #f0f0f0;
+    --text-light: #a0a0a0;
+    --text-dark: #e0e0e0;
+    
+    /* Background Colors - Dark Mode */
+    --bg-white: #2d2d2d;
+    --bg-light: #1a1a1a;
+    
+    /* Border Colors - Dark Mode */
+    --border-color: #444;
+    --border-light: #555;
+    
+    /* Shadow Variables - Dark Mode */
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
+    
+    /* Chat-specific Variables - Dark Mode */
+    --received-message-bg: #3a3a3a;
+    
+    /* Adjusted Color Variants for Dark Mode */
+    --primary-light: rgba(183, 28, 28, 0.2);
+    --success-light: rgba(76, 175, 80, 0.2);
+    --warning-light: rgba(255, 152, 0, 0.2);
+    --danger-light: rgba(244, 67, 54, 0.2);
+    --accent-light: rgba(33, 150, 243, 0.2);
+    --info-light: rgba(0, 188, 212, 0.2);
+  }
+}

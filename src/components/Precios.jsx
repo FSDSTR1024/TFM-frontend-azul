@@ -5,7 +5,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "./Precios.css";
 import {
-  TruckIcon,
+  Truck as TruckIcon,
   Package,
   Calculator,
   MessageSquare,
@@ -15,7 +15,6 @@ import {
   MapPin,
   Send,
 } from "lucide-react";
-
 // Establecer el token de acceso de Mapbox
 mapboxgl.accessToken =
   "pk.eyJ1IjoiamFkcmlhbmdwIiwiYSI6ImNtN3hxZm9nczAxdmkyaXFzbGk0b28xNHUifQ.svXLzJIXxrcOeC2ldaw0Jg";
@@ -367,83 +366,130 @@ const Precios = () => {
   return (
     <>
       <Navbar />
-
-      {/* Sección Hero */}
-      <section className="precios-hero">
-        <div className="hero-content">
-          <h1>Precios Transparentes y Competitivos</h1>
-          <p>
-            En FlashGo te ofrecemos las mejores tarifas para tus envíos con
-            precios claros y sin sorpresas
+ {/* Nueva sección impactante */}
+ <section className="delivery-promise">
+        <div className="delivery-promise-content">
+          <h2 className="delivery-promise-title">
+            Tu Envío, Nuestra Misión
+          </h2>
+          <p className="delivery-promise-subtitle">
+            Transformando distancias en conexiones, 
+            convirtiendo paquetes en experiencias
           </p>
+          <div className="delivery-promise-features">
+            <div className="promise-feature">
+              <Clock size={36} />
+              <span>Rapidez Garantizada</span>
+            </div>
+            <div className="promise-feature">
+              <Shield size={36} />
+              <span>Seguridad Total</span>
+            </div>
+            <div className="promise-feature">
+              <MapPin size={36} />
+              <span>Cobertura Ilimitada</span>
+            </div>
+          </div>
         </div>
       </section>
-
       {/* Sección de Planes */}
       <section className="pricing-plans">
-        <h2>Nuestros Planes</h2>
+        <h2 className="section-title2">Tipos de Envío por Vehículo</h2>
         <p className="section-description">
-          Tenemos opciones para cada necesidad, desde envíos puntuales hasta
-          soluciones empresariales
+          Elige el vehículo perfecto para tu envío. Cada opción está diseñada 
+          para maximizar eficiencia y economía.
         </p>
 
         <div className="plans-container">
           <div className="plan-card">
             <div className="plan-header">
-              <h3>Plan Básico</h3>
+              <div className="plan-icon">🚲</div>
+              <h3>Bicicleta</h3>
+              <p className="price">Desde 3€</p>
+            </div>
+            <div className="plan-features">
+              <ul>
+                <li>Ideal para zonas urbanas densas</li>
+                <li>Envíos ecológicos y rápidos</li>
+                <li>Paquetes hasta 5 kg</li>
+                <li>Dimensiones máximas: 40x30x20 cm</li>
+                <li>Perfecto para documentos y paquetes pequeños</li>
+                <li>Tiempo de entrega: 30-60 minutos</li>
+              </ul>
+            </div>
+            <p className="plan-ideal">
+              Ideal para envíos urbanos de bajo peso
+            </p>
+          </div>
+
+          <div className="plan-card">
+            <div className="plan-header">
+              <div className="plan-icon">🏍️</div>
+              <h3>Moto</h3>
               <p className="price">Desde 5€</p>
             </div>
             <div className="plan-features">
               <ul>
-                <li>Envíos a domicilio dentro de tu ciudad</li>
-                <li>Entrega en el mismo día</li>
-                <li>Seguimiento en tiempo real</li>
-                <li>Soporte por chat</li>
+                <li>Mayor versatilidad y rapidez</li>
+                <li>Navegación ágil en tráfico urbano</li>
+                <li>Paquetes hasta 15 kg</li>
+                <li>Dimensiones máximas: 50x40x30 cm</li>
+                <li>Ideal para entregas medianas</li>
+                <li>Tiempo de entrega: 20-45 minutos</li>
+                <li>Cobertura más amplia de la ciudad</li>
               </ul>
             </div>
             <p className="plan-ideal">
-              Ideal para envíos personales ocasionales
+              Perfecto para envíos urgentes de tamaño medio
             </p>
           </div>
 
           <div className="plan-card">
             <div className="plan-header">
-              <h3>Plan Premium</h3>
+              <div className="plan-icon">🚗</div>
+              <h3>Coche</h3>
               <p className="price">Desde 8€</p>
             </div>
             <div className="plan-features">
               <ul>
-                <li>Envíos a domicilio con prioridad</li>
-                <li>Entrega en menos de 4 horas</li>
-                <li>Seguimiento en tiempo real</li>
-                <li>Soporte 24/7</li>
-                <li>Seguro básico incluido</li>
+                <li>Mayor capacidad de carga</li>
+                <li>Ideal para envíos voluminosos</li>
+                <li>Paquetes hasta 30 kg</li>
+                <li>Dimensiones máximas: 80x60x40 cm</li>
+                <li>Perfecto para mudanzas pequeñas</li>
+                <li>Tiempo de entrega: 45-90 minutos</li>
+                <li>Cobertura intercity limitada</li>
               </ul>
             </div>
-            <p className="plan-ideal">Ideal para envíos urgentes</p>
+            <p className="plan-ideal">
+              Recomendado para envíos grandes dentro de la ciudad
+            </p>
           </div>
 
           <div className="plan-card">
             <div className="plan-header">
-              <h3>Plan Empresarial</h3>
-              <p className="price">Personalizado</p>
+              <div className="plan-icon">🚚</div>
+              <h3>Furgoneta</h3>
+              <p className="price">Desde 12€</p>
             </div>
             <div className="plan-features">
               <ul>
-                <li>Envíos múltiples y programados</li>
-                <li>API de integración</li>
-                <li>Panel de administración</li>
-                <li>Facturación mensual</li>
-                <li>Seguro completo incluido</li>
-                <li>Gerente de cuenta dedicado</li>
+                <li>Máxima capacidad de carga</li>
+                <li>Envíos de gran volumen</li>
+                <li>Paquetes hasta 200 kg</li>
+                <li>Dimensiones máximas: 200x120x100 cm</li>
+                <li>Ideal para mudanzas y cargas grandes</li>
+                <li>Tiempo de entrega: 60-120 minutos</li>
+                <li>Cobertura intercity extendida</li>
               </ul>
             </div>
             <p className="plan-ideal">
-              Ideal para empresas con envíos regulares
+              Solución definitiva para envíos de gran tamaño
             </p>
           </div>
         </div>
       </section>
+
 
       {/* Sección de Calculadora de Precios */}
       <section className="price-calculator">
