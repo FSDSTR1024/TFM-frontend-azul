@@ -306,13 +306,16 @@ const Precios = () => {
         distance,
       };
 
-      const response = await fetch("http://localhost:5000/api/send-quote", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestData),
-      });
+      const response = await fetch(
+        import.meta.env.BACKEND + "/api/send-quote",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
+        }
+      );
       if (!response.ok) {
         throw new Error(
           `Error del servidor: ${response.status} ${response.statusText}`
@@ -366,15 +369,13 @@ const Precios = () => {
   return (
     <>
       <Navbar />
- {/* Nueva sección impactante */}
- <section className="delivery-promise">
+      {/* Nueva sección impactante */}
+      <section className="delivery-promise">
         <div className="delivery-promise-content">
-          <h2 className="delivery-promise-title">
-            Tu Envío, Nuestra Misión
-          </h2>
+          <h2 className="delivery-promise-title">Tu Envío, Nuestra Misión</h2>
           <p className="delivery-promise-subtitle">
-            Transformando distancias en conexiones, 
-            convirtiendo paquetes en experiencias
+            Transformando distancias en conexiones, convirtiendo paquetes en
+            experiencias
           </p>
           <div className="delivery-promise-features">
             <div className="promise-feature">
@@ -396,7 +397,7 @@ const Precios = () => {
       <section className="pricing-plans">
         <h2 className="section-title2">Tipos de Envío por Vehículo</h2>
         <p className="section-description">
-          Elige el vehículo perfecto para tu envío. Cada opción está diseñada 
+          Elige el vehículo perfecto para tu envío. Cada opción está diseñada
           para maximizar eficiencia y economía.
         </p>
 
@@ -417,9 +418,7 @@ const Precios = () => {
                 <li>Tiempo de entrega: 30-60 minutos</li>
               </ul>
             </div>
-            <p className="plan-ideal">
-              Ideal para envíos urbanos de bajo peso
-            </p>
+            <p className="plan-ideal">Ideal para envíos urbanos de bajo peso</p>
           </div>
 
           <div className="plan-card">
@@ -489,7 +488,6 @@ const Precios = () => {
           </div>
         </div>
       </section>
-
 
       {/* Sección de Calculadora de Precios */}
       <section className="price-calculator">
