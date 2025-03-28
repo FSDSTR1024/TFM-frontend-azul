@@ -44,6 +44,25 @@ const Navbar = () => {
     setMenuOpen(false);
   };
 
+  // Función para determinar la ruta del perfil según el tipo de usuario
+  const getProfileRoute = () => {
+    if (!user) return "/UserProfile"; // Valor por defecto
+    
+    switch (user.userType) {
+      case "driver":
+        return "/DriverProfile";
+      case "company":
+        return "/CompanyProfile";
+      default:
+        return "/UserProfile";
+    }
+  };
+
+  const handleProfileClick = () => {
+    handleCloseMenu(); // Cerrar el menú
+    navigate(getProfileRoute()); // Navegar a la ruta correspondiente
+  };
+
   return (
     <>
       <header className="navbar">
@@ -54,7 +73,7 @@ const Navbar = () => {
           >
             <FontAwesomeIcon icon={menuOpen ? faTimes : faBars} />
           </button>
-          <div className="logo">FlashGo</div>
+          <div className="logo">FastGo</div>
         </div>
         <div className="navbar-right">
           {!user && (
@@ -89,8 +108,8 @@ const Navbar = () => {
           )}
           {user && (
             <>
-              <li onClick={handleCloseMenu}>
-                <Link to="/UserProfile">Mi Perfil</Link>
+              <li onClick={handleProfileClick}>
+                <a href="#" onClick={(e) => e.preventDefault()}>Mi Perfil</a>
               </li>
               <li>
                 <button 
