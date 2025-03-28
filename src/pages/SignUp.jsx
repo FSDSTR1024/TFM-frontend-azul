@@ -59,7 +59,7 @@ export const SignUp = () => {
       formData.append("vehicleImage", vehicleImageUrl);
     }
     try {
-      const response = await fetch(import.meta.env.BACKEND + "/api/register", {
+      const response = await fetch("http://localhost:5000/api/register", {
         method: "POST",
         body: formData, // :fire: Ahora enviamos `FormData` en lugar de JSON
       });

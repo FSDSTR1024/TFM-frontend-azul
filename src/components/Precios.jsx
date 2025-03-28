@@ -306,16 +306,13 @@ const Precios = () => {
         distance,
       };
 
-      const response = await fetch(
-        import.meta.env.BACKEND + "/api/send-quote",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestData),
-        }
-      );
+      const response = await fetch("http://localhost:5000/api/send-quote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
       if (!response.ok) {
         throw new Error(
           `Error del servidor: ${response.status} ${response.statusText}`
